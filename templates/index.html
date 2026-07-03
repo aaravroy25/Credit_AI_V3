@@ -1,0 +1,1610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CreditLens — AI Alt-Credit Scoring for Small Businesses</title>
+<meta name="description" content="CreditLens computes a 300-900 Alt-Credit Score for small businesses using alternative data — digital payments, utility reliability, AI market demand and macroeconomic context." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%88%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================= RESET & BASE ============================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root{
+  --bg:#080b16;
+  --bg2:#0d1226;
+  --surface:#121834;
+  --surface-hi:#161d40;
+  --border:rgba(148,163,255,0.14);
+  --text:#eef1ff;
+  --text-dim:#9aa3c7;
+  --text-dimmer:#6b7399;
+  --primary:#38bdf8;
+  --primary-2:#818cf8;
+  --accent:#22d3a8;
+  --gold:#f5c04d;
+  --amber:#f5b942;
+  --danger:#f5636b;
+  --grad-brand: linear-gradient(135deg,#38bdf8 0%,#818cf8 50%,#22d3a8 100%);
+  --grad-score: linear-gradient(90deg,#f5636b 0%, #f5b942 50%, #22d3a8 100%);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.45);
+  --radius: 18px;
+  --radius-sm: 12px;
+  font-size: 16px;
+}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background: radial-gradient(ellipse 120% 80% at 20% -10%, #16204a 0%, transparent 60%),
+              radial-gradient(ellipse 100% 60% at 100% 0%, #1a2650 0%, transparent 55%),
+              var(--bg);
+  color: var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  line-height:1.55;
+}
+h1,h2,h3,h4,.brand{ font-family:'Sora',system-ui,sans-serif; }
+a{ color:inherit; text-decoration:none; }
+button{ font-family:inherit; cursor:pointer; }
+input, select{ font-family:inherit; }
+img,svg{ display:block; max-width:100%; }
+.hidden{ display:none !important; }
+::selection{ background: var(--primary); color:#08111f; }
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-track{ background:var(--bg2); }
+::-webkit-scrollbar-thumb{ background:#2a3568; border-radius:10px; }
+
+.container{ width:100%; max-width:1180px; margin:0 auto; padding:0 24px; }
+.gradient-text{
+  background: var(--grad-brand);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.pill-btn{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:13px 26px; border-radius:100px; border:none;
+  font-weight:700; font-size:0.95rem; letter-spacing:0.2px;
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, filter .25s ease;
+  white-space:nowrap;
+}
+.pill-btn.primary{
+  background: var(--grad-brand); color:#06101f;
+  box-shadow: 0 10px 30px -6px rgba(56,189,248,0.55);
+}
+.pill-btn.primary:hover{ transform: translateY(-3px) scale(1.02); filter:brightness(1.08); box-shadow: 0 16px 36px -6px rgba(56,189,248,0.7); }
+.pill-btn.ghost{
+  background: rgba(255,255,255,0.05); color: var(--text);
+  border:1px solid var(--border);
+}
+.pill-btn.ghost:hover{ background: rgba(255,255,255,0.09); transform: translateY(-2px); }
+.pill-btn:active{ transform: translateY(0) scale(0.98); }
+.pill-btn:disabled{ opacity:0.45; cursor:not-allowed; transform:none !important; }
+
+/* ============================= BACKGROUND FX ============================= */
+.bg-blobs{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.blob{ position:absolute; border-radius:50%; filter: blur(90px); opacity:0.35; animation: floatBlob 18s ease-in-out infinite; }
+.blob.b1{ width:520px; height:520px; background:#2563eb; top:-160px; left:-140px; animation-duration:22s; }
+.blob.b2{ width:460px; height:460px; background:#7c3aed; top:20%; right:-160px; animation-duration:26s; animation-delay:-6s; }
+.blob.b3{ width:420px; height:420px; background:#0d9488; bottom:-160px; left:30%; animation-duration:20s; animation-delay:-3s; }
+@keyframes floatBlob{
+  0%,100%{ transform: translate(0,0) scale(1); }
+  33%{ transform: translate(40px,-30px) scale(1.08); }
+  66%{ transform: translate(-30px,20px) scale(0.94); }
+}
+.grid-overlay{
+  position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.35;
+  background-image: linear-gradient(rgba(148,163,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,255,0.05) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 30%, transparent 75%);
+}
+
+/* ============================= NAVBAR ============================= */
+.navbar{
+  position:sticky; top:0; z-index:200;
+  backdrop-filter: blur(16px) saturate(140%);
+  background: rgba(8,11,22,0.72);
+  border-bottom:1px solid var(--border);
+}
+.navbar-inner{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; }
+.brand{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:1.3rem; }
+.brand .logo-mark{
+  width:36px; height:36px; border-radius:10px; background: var(--grad-brand);
+  display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+  box-shadow: 0 6px 18px rgba(56,189,248,0.4);
+  animation: pulseLogo 3.5s ease-in-out infinite;
+}
+@keyframes pulseLogo{ 0%,100%{ box-shadow:0 6px 18px rgba(56,189,248,0.4); } 50%{ box-shadow:0 6px 26px rgba(129,140,248,0.65); } }
+.nav-links{ display:flex; align-items:center; gap:30px; }
+.nav-links a{ color:var(--text-dim); font-weight:600; font-size:0.92rem; transition: color .2s; position:relative; }
+.nav-links a:hover{ color:var(--text); }
+.nav-links a::after{ content:''; position:absolute; left:0; bottom:-6px; width:0; height:2px; background:var(--grad-brand); transition:width .25s; }
+.nav-links a:hover::after{ width:100%; }
+.nav-actions{ display:flex; align-items:center; gap:14px; }
+.lang-select{
+  background: var(--surface); color:var(--text); border:1px solid var(--border);
+  border-radius:10px; padding:9px 12px; font-size:0.85rem; font-weight:600;
+}
+.nav-toggle{ display:none; background:none; border:none; color:var(--text); font-size:1.5rem; }
+
+/* ============================= HERO ============================= */
+.hero{ position:relative; z-index:1; padding:96px 0 60px; }
+.hero-inner{ display:grid; grid-template-columns:1.05fr 0.95fr; gap:50px; align-items:center; }
+.eyebrow{
+  display:inline-flex; align-items:center; gap:8px; padding:7px 16px; border-radius:100px;
+  background: rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.3);
+  color:#7dd3fc; font-size:0.8rem; font-weight:700; letter-spacing:0.3px; margin-bottom:22px;
+  animation: fadeInUp .7s ease both;
+}
+.eyebrow .dot{ width:7px; height:7px; border-radius:50%; background:#22d3a8; box-shadow:0 0 10px #22d3a8; animation: blink 1.6s ease-in-out infinite; }
+@keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+.hero h1{ font-size:clamp(2.3rem,4.6vw,3.6rem); font-weight:800; line-height:1.08; letter-spacing:-1px; animation: fadeInUp .8s ease .05s both; }
+.hero p.lead{ margin-top:20px; font-size:1.12rem; color:var(--text-dim); max-width:540px; animation: fadeInUp .8s ease .15s both; }
+.hero-cta{ display:flex; gap:16px; margin-top:34px; flex-wrap:wrap; animation: fadeInUp .8s ease .25s both; }
+@keyframes fadeInUp{ from{ opacity:0; transform:translateY(24px);} to{ opacity:1; transform:translateY(0);} }
+.hero-stats{ display:flex; gap:34px; margin-top:44px; flex-wrap:wrap; animation: fadeInUp .8s ease .35s both; }
+.hero-stat b{ display:block; font-size:1.5rem; font-weight:800; font-family:'Sora',sans-serif; }
+.hero-stat span{ color:var(--text-dimmer); font-size:0.8rem; }
+
+/* Hero gauge mockup */
+.hero-visual{ position:relative; display:flex; align-items:center; justify-content:center; animation: fadeInUp 1s ease .3s both; }
+.hero-card{
+  position:relative; width:100%; max-width:400px; background: linear-gradient(160deg, var(--surface-hi), var(--surface));
+  border:1px solid var(--border); border-radius:24px; padding:30px; box-shadow: var(--shadow-lg);
+  animation: floatY 6s ease-in-out infinite;
+}
+@keyframes floatY{ 0%,100%{ transform:translateY(0px) rotate(0.2deg);} 50%{ transform:translateY(-14px) rotate(-0.2deg);} }
+.hero-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.hero-card-head span{ font-size:0.78rem; color:var(--text-dimmer); font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+.hero-badge{ background:rgba(34,211,168,0.15); color:var(--accent); padding:4px 10px; border-radius:8px; font-size:0.72rem; font-weight:700; }
+.mock-gauge{ display:flex; flex-direction:column; align-items:center; gap:6px; margin:10px 0 20px; }
+.mock-gauge svg{ width:210px; height:210px; }
+.mock-gauge .score-num{ font-family:'Sora',sans-serif; font-size:2.6rem; font-weight:800; }
+.mock-gauge .score-tier{ color:var(--accent); font-weight:700; font-size:0.9rem; }
+.mock-factors{ display:flex; flex-direction:column; gap:10px; }
+.mock-factor-row{ display:flex; align-items:center; gap:10px; font-size:0.78rem; }
+.mock-factor-row .label{ width:120px; color:var(--text-dim); }
+.mock-factor-row .track{ flex:1; height:6px; border-radius:6px; background:rgba(255,255,255,0.07); overflow:hidden; }
+.mock-factor-row .fill{ height:100%; border-radius:6px; background:var(--grad-brand); width:0%; transition: width 1.4s cubic-bezier(.2,.8,.2,1); }
+.floating-chip{
+  position:absolute; padding:10px 14px; border-radius:14px; background: var(--surface-hi);
+  border:1px solid var(--border); box-shadow: var(--shadow-lg); font-size:0.78rem; font-weight:700;
+  display:flex; align-items:center; gap:8px; animation: floatY 5s ease-in-out infinite;
+}
+.floating-chip.c1{ top:-18px; right:-30px; animation-delay:-1.2s; color:#7dd3fc; }
+.floating-chip.c2{ bottom:10px; left:-40px; animation-delay:-2.8s; color:#c4b5fd; }
+
+/* ============================= SECTION SHARED ============================= */
+.section{ position:relative; z-index:1; padding:90px 0; }
+.section-head{ text-align:center; max-width:640px; margin:0 auto 56px; }
+.section-tag{ color:var(--primary); font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:2px; }
+.section-head h2{ font-size:clamp(1.8rem,3.2vw,2.5rem); margin-top:12px; letter-spacing:-0.5px; }
+.section-head p{ margin-top:14px; color:var(--text-dim); }
+.reveal{ opacity:0; transform:translateY(30px); transition: opacity .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1); }
+.reveal.in{ opacity:1; transform:translateY(0); }
+
+/* How it works */
+.steps-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:22px; }
+.step-card{
+  background: var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px 22px;
+  transition: transform .3s ease, border-color .3s ease, background .3s ease;
+}
+.step-card:hover{ transform: translateY(-8px); border-color: rgba(56,189,248,0.4); background: var(--surface-hi); }
+.step-num{
+  width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  background: var(--grad-brand); color:#06101f; font-weight:800; font-family:'Sora',sans-serif; margin-bottom:16px;
+}
+.step-card h3{ font-size:1.05rem; margin-bottom:8px; }
+.step-card p{ color:var(--text-dim); font-size:0.88rem; }
+
+/* Scoring factors */
+.factors-panel{
+  background: var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:36px;
+  display:grid; grid-template-columns:1fr 1fr; gap:34px; align-items:center;
+}
+.factor-bar-item{ margin-bottom:18px; }
+.factor-bar-item:last-child{ margin-bottom:0; }
+.factor-bar-top{ display:flex; justify-content:space-between; font-size:0.86rem; margin-bottom:7px; }
+.factor-bar-top b{ font-weight:700; }
+.factor-bar-top span.wt{ color:var(--text-dimmer); }
+.factor-bar-track{ height:9px; border-radius:8px; background:rgba(255,255,255,0.06); overflow:hidden; }
+.factor-bar-fill{ height:100%; border-radius:8px; width:0%; transition:width 1.2s cubic-bezier(.2,.8,.2,1); }
+.factors-visual{ display:flex; align-items:center; justify-content:center; }
+.donut-wrap{ position:relative; width:260px; height:260px; }
+.donut-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.donut-center b{ font-size:1.7rem; font-family:'Sora',sans-serif; }
+.donut-center span{ font-size:0.75rem; color:var(--text-dimmer); }
+
+/* Countries */
+.countries-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.country-card{
+  background: var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:22px;
+  transition: transform .3s ease, border-color .3s;
+}
+.country-card:hover{ transform: translateY(-6px); border-color: rgba(129,140,248,0.5); }
+.country-card .flag{ font-size:1.8rem; }
+.country-card h4{ margin:10px 0 8px; font-size:1.05rem; }
+.rail-chip{
+  display:inline-block; font-size:0.7rem; padding:4px 9px; border-radius:100px; background:rgba(129,140,248,0.14);
+  color:#c4b5fd; margin:3px 4px 0 0; border:1px solid rgba(129,140,248,0.25);
+}
+
+/* Features */
+.features-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+.feature-card{
+  background: linear-gradient(160deg, var(--surface-hi), var(--surface));
+  border:1px solid var(--border); border-radius:var(--radius); padding:26px;
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.feature-card:hover{ transform: translateY(-6px); box-shadow: 0 16px 40px rgba(0,0,0,0.35); }
+.feature-icon{
+  width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  font-size:1.3rem; background: rgba(56,189,248,0.12); margin-bottom:14px;
+}
+.feature-card h3{ font-size:1.02rem; margin-bottom:8px; }
+.feature-card p{ color:var(--text-dim); font-size:0.86rem; }
+
+/* Final CTA */
+.cta-section{
+  background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(129,140,248,0.12));
+  border:1px solid var(--border); border-radius:28px; padding:64px 40px; text-align:center;
+  position:relative; overflow:hidden;
+}
+.cta-section h2{ font-size:clamp(1.7rem,3vw,2.3rem); margin-bottom:16px; }
+.cta-section p{ color:var(--text-dim); max-width:520px; margin:0 auto 30px; }
+
+footer{ position:relative; z-index:1; padding:40px 0; border-top:1px solid var(--border); text-align:center; color:var(--text-dimmer); font-size:0.85rem; }
+
+/* ============================= WIZARD APP ============================= */
+#app-view{ position:relative; z-index:1; min-height:100vh; padding:30px 0 80px; }
+.app-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:34px; }
+.app-progress{ display:flex; align-items:center; gap:0; max-width:640px; margin:0 auto 46px; }
+.prog-step{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; }
+.prog-step .circle{
+  width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background: var(--surface); border:2px solid var(--border); font-weight:700; font-size:0.9rem; color:var(--text-dim);
+  transition: all .35s ease; z-index:2;
+}
+.prog-step .label{ font-size:0.74rem; color:var(--text-dimmer); font-weight:600; text-align:center; }
+.prog-step::before{
+  content:''; position:absolute; top:19px; left:-50%; width:100%; height:2px; background:var(--border); z-index:1;
+}
+.prog-step:first-child::before{ display:none; }
+.prog-step.done .circle{ background: var(--grad-brand); border-color:transparent; color:#06101f; }
+.prog-step.done::before{ background: var(--grad-brand); }
+.prog-step.active .circle{ border-color: var(--primary); color:var(--primary); box-shadow: 0 0 0 5px rgba(56,189,248,0.15); }
+.prog-step.active .label{ color:var(--text); }
+
+.wizard-card{
+  max-width:840px; margin:0 auto; background: var(--surface); border:1px solid var(--border);
+  border-radius:24px; padding:40px; box-shadow: var(--shadow-lg);
+  animation: fadeInUp .5s ease both;
+}
+.wizard-step-title{ font-size:1.5rem; font-weight:800; font-family:'Sora',sans-serif; margin-bottom:6px; }
+.wizard-step-sub{ color:var(--text-dim); font-size:0.92rem; margin-bottom:30px; }
+
+.form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.form-field{ display:flex; flex-direction:column; gap:7px; }
+.form-field.full{ grid-column:1/-1; }
+.form-field label{ font-size:0.82rem; font-weight:600; color:var(--text-dim); display:flex; justify-content:space-between; }
+.form-field label .hint-val{ color:var(--primary); font-weight:700; }
+.form-field input, .form-field select{
+  background: var(--bg2); border:1px solid var(--border); color:var(--text); padding:12px 14px;
+  border-radius:11px; font-size:0.94rem; outline:none; transition: border-color .2s, box-shadow .2s;
+}
+.form-field input:focus, .form-field select:focus{ border-color: var(--primary); box-shadow: 0 0 0 3px rgba(56,189,248,0.18); }
+.form-field input[type=range]{ padding:0; height:6px; -webkit-appearance:none; background:rgba(255,255,255,0.08); border-radius:6px; }
+.form-field input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background: var(--grad-brand); cursor:pointer;
+  box-shadow: 0 0 0 4px rgba(56,189,248,0.2);
+}
+.field-note{ font-size:0.74rem; color:var(--text-dimmer); }
+
+.wizard-actions{ display:flex; justify-content:space-between; margin-top:34px; }
+
+/* Step 1 - globe */
+.location-layout{ display:grid; grid-template-columns:1.1fr 1fr; gap:30px; align-items:start; }
+.globe-scene{
+  perspective:1100px; width:100%; aspect-ratio:1/1; max-width:360px; margin:0 auto;
+  display:flex; align-items:center; justify-content:center; position:relative; cursor:grab;
+}
+.globe-scene:active{ cursor:grabbing; }
+.globe-scene::before{
+  content:''; position:absolute; inset:6%; border-radius:50%;
+  background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.35), transparent 55%);
+  z-index:5; pointer-events:none; mix-blend-mode:screen;
+}
+.globe{
+  width:78%; height:78%; border-radius:50%; position:relative; transform-style:preserve-3d;
+  background:
+    radial-gradient(circle at 30% 25%, #2a4fa8 0%, transparent 45%),
+    conic-gradient(from 0deg, #0d9488, #1d4ed8, #7c3aed, #0d9488);
+  box-shadow: 0 0 60px rgba(56,189,248,0.35), inset -30px -30px 60px rgba(0,0,0,0.55), inset 20px 20px 50px rgba(255,255,255,0.08);
+  animation: autoSpin 34s linear infinite;
+}
+.globe.dragging{ animation-play-state: paused; }
+@keyframes autoSpin{ from{ transform: rotateY(0deg) rotateX(14deg); } to{ transform: rotateY(360deg) rotateX(14deg); } }
+.globe-grid{ position:absolute; inset:0; border-radius:50%; opacity:0.25;
+  background-image: repeating-linear-gradient(0deg, transparent 0 9%, rgba(255,255,255,0.5) 9% 9.6%),
+                     repeating-linear-gradient(90deg, transparent 0 9%, rgba(255,255,255,0.5) 9% 9.6%);
+  background-size: 100% 100%;
+  mask-image: radial-gradient(circle, black 60%, transparent 100%);
+}
+.marker{ position:absolute; top:50%; left:50%; width:0; height:0; transform-style:preserve-3d; }
+.marker-dot{
+  position:absolute; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%;
+  background: var(--primary); box-shadow: 0 0 12px 3px rgba(56,189,248,0.8);
+  cursor:pointer; transition: transform .2s ease, background .3s ease, box-shadow .3s ease;
+  animation: markerPulse 2.4s ease-in-out infinite;
+}
+.marker-dot.premium-rich{ background: var(--gold); box-shadow: 0 0 14px 4px rgba(245,192,77,0.85); }
+.marker-dot:hover, .marker-dot.selected{ transform: scale(1.6); background:var(--accent); box-shadow:0 0 20px 6px rgba(34,211,168,0.9); }
+@keyframes markerPulse{ 0%,100%{ filter:brightness(1);} 50%{ filter:brightness(1.35);} }
+
+.globe-hint{ text-align:center; font-size:0.76rem; color:var(--text-dimmer); margin-top:14px; }
+.country-chip-grid{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; justify-content:center; }
+.country-chip{
+  padding:8px 14px; border-radius:100px; background:var(--bg2); border:1px solid var(--border);
+  font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:6px; transition: all .2s ease;
+}
+.country-chip:hover{ border-color: var(--primary); }
+.country-chip.active{ background: var(--grad-brand); color:#06101f; border-color:transparent; }
+
+.location-panel{ display:flex; flex-direction:column; gap:18px; }
+.rails-box{
+  background: var(--bg2); border:1px solid var(--border); border-radius:14px; padding:18px;
+}
+.rails-box h4{ font-size:0.85rem; margin-bottom:10px; color:var(--text-dim); }
+.premium-badge{
+  display:inline-flex; align-items:center; gap:6px; background: rgba(245,192,77,0.14); color: var(--gold);
+  padding:6px 12px; border-radius:100px; font-size:0.76rem; font-weight:700; border:1px solid rgba(245,192,77,0.3);
+  margin-top:10px;
+}
+
+/* Step 3 EMI */
+.emi-summary{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:26px;
+}
+.emi-tile{ background: var(--bg2); border:1px solid var(--border); border-radius:14px; padding:18px; }
+.emi-tile span{ font-size:0.75rem; color:var(--text-dimmer); text-transform:uppercase; letter-spacing:0.5px; }
+.emi-tile b{ display:block; font-size:1.35rem; font-family:'Sora',sans-serif; margin-top:6px; }
+.dti-bar-wrap{ margin-top:22px; }
+.dti-bar-track{ height:12px; border-radius:8px; background:rgba(255,255,255,0.07); overflow:hidden; position:relative; }
+.dti-bar-fill{ height:100%; border-radius:8px; width:0%; transition: width .6s ease, background .6s ease; background: var(--accent); }
+.dti-marker{ position:absolute; top:-4px; left:45%; width:2px; height:20px; background:var(--danger); }
+.dti-warning{
+  margin-top:14px; padding:12px 16px; border-radius:12px; background: rgba(245,99,107,0.12);
+  border:1px solid rgba(245,99,107,0.35); color:#fca5ac; font-size:0.85rem; display:flex; gap:10px; align-items:center;
+}
+
+/* Step 4 Dashboard */
+.dash-loading{ text-align:center; padding:70px 0; }
+.orbit-loader{ width:90px; height:90px; margin:0 auto 26px; position:relative; }
+.orbit-loader div{
+  position:absolute; inset:0; border-radius:50%; border:3px solid transparent;
+  border-top-color: var(--primary); animation: spin 1.1s linear infinite;
+}
+.orbit-loader div:nth-child(2){ inset:12px; border-top-color: var(--accent); animation-duration:1.6s; animation-direction:reverse; }
+.orbit-loader div:nth-child(3){ inset:24px; border-top-color: var(--primary-2); animation-duration:0.9s; }
+@keyframes spin{ to{ transform: rotate(360deg); } }
+.dash-loading p{ color:var(--text-dim); }
+.dash-loading .loading-msgs{ font-size:0.82rem; color:var(--text-dimmer); margin-top:8px; min-height:20px; }
+
+.dash-result{ display:none; }
+.dash-top{ display:grid; grid-template-columns:0.9fr 1.1fr; gap:40px; align-items:center; margin-bottom:40px; }
+.gauge-wrap{ position:relative; display:flex; flex-direction:column; align-items:center; }
+.gauge-wrap svg{ width:260px; height:260px; filter: drop-shadow(0 0 24px rgba(56,189,248,0.25)); }
+.gauge-center{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+.gauge-center .num{ font-size:3.2rem; font-weight:800; font-family:'Sora',sans-serif; }
+.gauge-center .max{ font-size:0.85rem; color:var(--text-dimmer); }
+.tier-badge{
+  margin-top:14px; padding:9px 20px; border-radius:100px; font-weight:800; font-size:0.9rem;
+  display:flex; align-items:center; gap:8px;
+}
+.tier-note{ text-align:center; color:var(--text-dim); font-size:0.82rem; margin-top:10px; max-width:280px; }
+
+.insight-cards{ display:flex; flex-direction:column; gap:12px; }
+.insight-card{
+  background: var(--bg2); border:1px solid var(--border); border-left:3px solid var(--primary);
+  border-radius:12px; padding:14px 16px; font-size:0.87rem; color:var(--text-dim); display:flex; gap:10px;
+  animation: fadeInUp .5s ease both;
+}
+.insight-card .ico{ font-size:1rem; }
+
+.dash-section-title{ font-size:1.1rem; font-weight:700; margin:34px 0 18px; display:flex; align-items:center; gap:8px; }
+.factor-detail-list{ display:flex; flex-direction:column; gap:16px; }
+.factor-detail-item{ background: var(--bg2); border:1px solid var(--border); border-radius:14px; padding:18px; }
+.factor-detail-top{ display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.92rem; }
+.factor-detail-top .fname{ font-weight:700; }
+.factor-detail-top .fscore{ font-weight:800; font-family:'Sora',sans-serif; }
+.factor-detail-desc{ font-size:0.8rem; color:var(--text-dimmer); margin-top:8px; }
+.factor-detail-weight{ font-size:0.72rem; color:var(--text-dimmer); }
+
+.macro-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:16px; }
+.macro-tile{ background: var(--bg2); border:1px solid var(--border); border-radius:14px; padding:16px; }
+.macro-tile span{ font-size:0.72rem; color:var(--text-dimmer); text-transform:uppercase; }
+.macro-tile b{ display:block; font-size:1.2rem; font-family:'Sora',sans-serif; margin-top:4px; }
+.source-tag{ display:inline-block; margin-top:8px; font-size:0.68rem; padding:3px 8px; border-radius:100px; background:rgba(34,211,168,0.14); color:var(--accent); }
+.source-tag.fallback{ background:rgba(245,185,66,0.14); color:var(--amber); }
+
+.dash-actions{ display:flex; gap:14px; justify-content:center; margin-top:40px; flex-wrap:wrap; }
+
+/* Toast */
+#toast-box{ position:fixed; top:20px; right:20px; z-index:999; display:flex; flex-direction:column; gap:10px; }
+.toast{
+  background: var(--surface-hi); border:1px solid var(--border); border-left:4px solid var(--danger);
+  padding:14px 18px; border-radius:12px; font-size:0.85rem; max-width:320px; box-shadow: var(--shadow-lg);
+  animation: fadeInUp .3s ease both;
+}
+
+/* ============================= CHATBOT ============================= */
+#chat-fab{
+  position:fixed; bottom:26px; right:26px; z-index:500; width:60px; height:60px; border-radius:50%;
+  background: var(--grad-brand); border:none; display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; box-shadow: 0 12px 30px rgba(56,189,248,0.5); transition: transform .25s ease;
+  animation: floatY 4s ease-in-out infinite;
+}
+#chat-fab:hover{ transform: scale(1.08); }
+#chat-fab .ping{
+  position:absolute; top:-2px; right:-2px; width:14px; height:14px; border-radius:50%; background:var(--accent);
+  box-shadow:0 0 0 0 rgba(34,211,168,0.7); animation: ringPing 2s infinite;
+}
+@keyframes ringPing{ 0%{ box-shadow:0 0 0 0 rgba(34,211,168,0.6);} 70%{ box-shadow:0 0 0 10px rgba(34,211,168,0);} 100%{ box-shadow:0 0 0 0 rgba(34,211,168,0);} }
+
+#chat-panel{
+  position:fixed; bottom:100px; right:26px; z-index:500; width:370px; max-width:92vw; height:520px; max-height:74vh;
+  background: var(--surface-hi); border:1px solid var(--border); border-radius:22px; box-shadow: var(--shadow-lg);
+  display:flex; flex-direction:column; overflow:hidden; transform-origin:bottom right;
+  transform: scale(0.85) translateY(20px); opacity:0; pointer-events:none; transition: all .3s cubic-bezier(.2,.8,.2,1);
+}
+#chat-panel.open{ transform: scale(1) translateY(0); opacity:1; pointer-events:auto; }
+.chat-head{
+  background: var(--grad-brand); color:#06101f; padding:16px 18px; display:flex; align-items:center; justify-content:space-between;
+}
+.chat-head-title{ display:flex; align-items:center; gap:10px; font-weight:800; }
+.chat-head-title .dot-live{ width:8px; height:8px; border-radius:50%; background:#06101f; animation:blink 1.4s infinite; }
+.chat-close{ background:rgba(0,0,0,0.12); border:none; color:#06101f; width:26px; height:26px; border-radius:50%; font-size:0.9rem; }
+.chat-messages{ flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:12px; }
+.msg{ max-width:85%; padding:11px 14px; border-radius:16px; font-size:0.86rem; line-height:1.5; animation: fadeInUp .3s ease both; }
+.msg.bot{ background: var(--bg2); border:1px solid var(--border); align-self:flex-start; border-bottom-left-radius:4px; }
+.msg.user{ background: var(--grad-brand); color:#06101f; align-self:flex-end; border-bottom-right-radius:4px; font-weight:600; }
+.typing-indicator{ display:flex; gap:4px; padding:12px 14px; background:var(--bg2); border:1px solid var(--border); border-radius:16px; align-self:flex-start; width:fit-content; }
+.typing-indicator span{ width:6px; height:6px; border-radius:50%; background: var(--text-dimmer); animation: typingBounce 1.2s infinite; }
+.typing-indicator span:nth-child(2){ animation-delay:0.15s; }
+.typing-indicator span:nth-child(3){ animation-delay:0.3s; }
+@keyframes typingBounce{ 0%,60%,100%{ transform:translateY(0); opacity:0.5; } 30%{ transform:translateY(-5px); opacity:1; } }
+.chat-suggest{ display:flex; flex-wrap:wrap; gap:6px; padding:0 18px 12px; }
+.chat-suggest button{
+  background: var(--bg2); border:1px solid var(--border); color:var(--text-dim); font-size:0.72rem;
+  padding:6px 10px; border-radius:100px; transition: all .2s;
+}
+.chat-suggest button:hover{ border-color:var(--primary); color:var(--text); }
+.chat-input-row{ display:flex; gap:10px; padding:14px; border-top:1px solid var(--border); }
+.chat-input-row input{
+  flex:1; background: var(--bg2); border:1px solid var(--border); color:var(--text); padding:11px 14px;
+  border-radius:100px; outline:none; font-size:0.86rem;
+}
+.chat-input-row input:focus{ border-color: var(--primary); }
+.chat-send{
+  width:42px; height:42px; border-radius:50%; background: var(--grad-brand); border:none; color:#06101f;
+  display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; transition: transform .2s;
+}
+.chat-send:hover{ transform: scale(1.08); }
+
+/* ============================= RESPONSIVE ============================= */
+@media (max-width: 900px){
+  .hero-inner{ grid-template-columns:1fr; }
+  .steps-grid{ grid-template-columns:repeat(2,1fr); }
+  .countries-grid{ grid-template-columns:repeat(2,1fr); }
+  .features-grid{ grid-template-columns:repeat(2,1fr); }
+  .factors-panel{ grid-template-columns:1fr; }
+  .location-layout{ grid-template-columns:1fr; }
+  .form-grid{ grid-template-columns:1fr; }
+  .dash-top{ grid-template-columns:1fr; }
+  .nav-links{ display:none; }
+}
+@media (max-width: 560px){
+  .steps-grid, .countries-grid, .features-grid, .emi-summary, .macro-grid{ grid-template-columns:1fr; }
+  #chat-panel{ right:10px; left:10px; width:auto; bottom:90px; }
+  #chat-fab{ right:16px; bottom:16px; }
+  .app-progress .label{ display:none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-blobs"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div class="grid-overlay"></div>
+<div id="toast-box"></div>
+
+<!-- ============================= NAVBAR ============================= -->
+<nav class="navbar">
+  <div class="container navbar-inner">
+    <div class="brand"><span class="logo-mark">📈</span><span data-i18n="brand">CreditLens</span></div>
+    <div class="nav-links">
+      <a href="#how" data-i18n="nav_how">How it works</a>
+      <a href="#scoring" data-i18n="nav_scoring">Scoring</a>
+      <a href="#countries" data-i18n="nav_countries">Countries</a>
+      <a href="#features" data-i18n="nav_features">Features</a>
+    </div>
+    <div class="nav-actions">
+      <select class="lang-select" id="lang-select">
+        <option value="en">EN</option>
+        <option value="hi">हिंदी</option>
+        <option value="sw">Kiswahili</option>
+        <option value="fr">Français</option>
+      </select>
+      <button class="pill-btn primary" id="nav-launch-btn" data-i18n="nav_launch">Launch App</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================= LANDING VIEW ============================= -->
+<div id="landing-view">
+
+  <section class="hero">
+    <div class="container hero-inner">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> <span data-i18n="hero_eyebrow">AI-powered alternative credit scoring</span></div>
+        <h1 data-i18n="hero_title">Make every small business <span class="gradient-text">bankable</span> — no credit history required</h1>
+        <p class="lead" data-i18n="hero_lead">CreditLens computes a transparent 300–900 Alt-Credit Score using digital payments, utility reliability, business stability, debt burden, AI-estimated market demand, and macroeconomic context — for businesses across India, Nigeria, Kenya, Bangladesh, the Philippines and Indonesia.</p>
+        <div class="hero-cta">
+          <button class="pill-btn primary" id="hero-launch-btn" data-i18n="hero_cta_primary">Get Your Alt-Credit Score →</button>
+          <button class="pill-btn ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})" data-i18n="hero_cta_secondary">See how it works</button>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><b>6</b><span data-i18n="stat_countries">Emerging markets</span></div>
+          <div class="hero-stat"><b>6</b><span data-i18n="stat_factors">Transparent factors</span></div>
+          <div class="hero-stat"><b>300–900</b><span data-i18n="stat_scale">Score scale</span></div>
+          <div class="hero-stat"><b>0%</b><span data-i18n="stat_hardcode">Hardcoded outcomes</span></div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="floating-chip c1">🤖 <span data-i18n="chip_ai">Gemini AI market analysis</span></div>
+        <div class="floating-chip c2">🌍 <span data-i18n="chip_wb">Live World Bank macro data</span></div>
+        <div class="hero-card">
+          <div class="hero-card-head"><span data-i18n="mock_title">Alt-Credit Score</span><span class="hero-badge" data-i18n="mock_badge">LIVE DEMO</span></div>
+          <div class="mock-gauge">
+            <svg viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="mockGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#f5636b"/><stop offset="50%" stop-color="#f5b942"/><stop offset="100%" stop-color="#22d3a8"/>
+                </linearGradient>
+              </defs>
+              <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
+              <circle id="mock-gauge-circle" cx="60" cy="60" r="52" fill="none" stroke="url(#mockGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="327" transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="score-num" id="mock-score-num">300</div>
+            <div class="score-tier" data-i18n="mock_tier">Watch it animate ↓</div>
+          </div>
+          <div class="mock-factors">
+            <div class="mock-factor-row"><span class="label" data-i18n="f_digital">Digital Payments</span><div class="track"><div class="fill" id="mf1"></div></div></div>
+            <div class="mock-factor-row"><span class="label" data-i18n="f_utility">Utility Reliability</span><div class="track"><div class="fill" id="mf2"></div></div></div>
+            <div class="mock-factor-row"><span class="label" data-i18n="f_demand">Market Demand (AI)</span><div class="track"><div class="fill" id="mf3"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="section-tag" data-i18n="how_tag">The Process</div>
+        <h2 data-i18n="how_title">Four steps to your score</h2>
+        <p data-i18n="how_sub">A guided wizard collects alternative data and computes your score transparently — no bank statements or bureau history needed.</p>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card reveal"><div class="step-num">1</div><h3 data-i18n="how1_title">Location</h3><p data-i18n="how1_desc">Pick your country, state and city on an interactive 3D globe. We surface the local digital payment rails we'll analyze, like UPI or M-Pesa.</p></div>
+        <div class="step-card reveal"><div class="step-num">2</div><h3 data-i18n="how2_title">Business Profile</h3><p data-i18n="how2_desc">Tell us your industry, revenue, and digital payment activity — transaction volume, frequency, and utility bill reliability.</p></div>
+        <div class="step-card reveal"><div class="step-num">3</div><h3 data-i18n="how3_title">Debt &amp; Loan Planning</h3><p data-i18n="how3_desc">Use the built-in EMI calculator to model a new loan and see your live debt-to-income ratio before you apply.</p></div>
+        <div class="step-card reveal"><div class="step-num">4</div><h3 data-i18n="how4_title">Score Dashboard</h3><p data-i18n="how4_desc">Our AI estimates local market demand and pulls live macroeconomic data, then renders your animated 300–900 score with a full breakdown.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="scoring">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="section-tag" data-i18n="scoring_tag">Fully Transparent</div>
+        <h2 data-i18n="scoring_title">Six weighted factors, zero black boxes</h2>
+        <p data-i18n="scoring_sub">Every point of your score is explainable. Here's exactly how the composite is weighted.</p>
+      </div>
+      <div class="factors-panel reveal">
+        <div>
+          <div class="factor-bar-item"><div class="factor-bar-top"><b data-i18n="f_digital">Digital Payment Health</b><span class="wt">35%</span></div><div class="factor-bar-track"><div class="factor-bar-fill" data-target="35" style="background:#38bdf8"></div></div></div>
+          <div class="factor-bar-item"><div class="factor-bar-top"><b data-i18n="f_utility">Utility Bill Reliability</b><span class="wt">15%</span></div><div class="factor-bar-track"><div class="factor-bar-fill" data-target="15" style="background:#818cf8"></div></div></div>
+          <div class="factor-bar-item"><div class="factor-bar-top"><b data-i18n="f_stability">Business Stability</b><span class="wt">15%</span></div><div class="factor-bar-track"><div class="factor-bar-fill" data-target="15" style="background:#a78bfa"></div></div></div>
+          <div class="factor-bar-item"><div class="factor-bar-top"><b data-i18n="f_debt">Debt Burden</b><span class="wt">15%</span></div><div class="factor-bar-track"><div class="factor-bar-fill" data-target="15" style="background:#f5b942"></div></div></div>
+          <div class="factor-bar-item"><div class="factor-bar-top"><b data-i18n="f_demand">Local Market Demand (AI)</b><span class="wt">12%</span></div><div class="factor-bar-track"><div class="factor-bar-fill" data-target="12" style="background:#22d3a8"></div></div></div>
+          <div class="factor-bar-item"><div class="factor-bar-top"><b data-i18n="f_macro">Macroeconomic Context</b><span class="wt">8%</span></div><div class="factor-bar-track"><div class="factor-bar-fill" data-target="8" style="background:#f5636b"></div></div></div>
+        </div>
+        <div class="factors-visual">
+          <div class="donut-wrap">
+            <svg viewBox="0 0 200 200" width="260" height="260" id="donut-svg"></svg>
+            <div class="donut-center"><b data-i18n="donut_label1">100%</b><span data-i18n="donut_label2">Explainable</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="countries">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="section-tag" data-i18n="countries_tag">Where We Work</div>
+        <h2 data-i18n="countries_title">Built for emerging markets</h2>
+        <p data-i18n="countries_sub">Each market has its own alternative data rails — CreditLens adapts to what businesses actually use.</p>
+      </div>
+      <div class="countries-grid" id="countries-grid"></div>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head reveal">
+        <div class="section-tag" data-i18n="features_tag">Under the Hood</div>
+        <h2 data-i18n="features_title">Everything a modern credit tool needs</h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal"><div class="feature-icon">🤖</div><h3 data-i18n="feat1_title">AI Market Demand</h3><p data-i18n="feat1_desc">Gemini 2.5 Flash analyzes local demand for your specific industry and city in real time — no static tables.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">🌍</div><h3 data-i18n="feat2_title">Live Macro Data</h3><p data-i18n="feat2_desc">Inflation and GDP growth pulled straight from the World Bank Open Data API for your country.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">🧮</div><h3 data-i18n="feat3_title">EMI &amp; DTI Planner</h3><p data-i18n="feat3_desc">Model new loans instantly and see your debt-to-income ratio with a live 45% healthy-threshold warning.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">🗺️</div><h3 data-i18n="feat4_title">3D Interactive Globe</h3><p data-i18n="feat4_desc">Pick your market visually — premium business districts are highlighted right on the map.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">💬</div><h3 data-i18n="feat5_title">AI Chat Assistant</h3><p data-i18n="feat5_desc">A Gemini-powered chatbot guides you through the wizard and gives small-business finance tips.</p></div>
+        <div class="feature-card reveal"><div class="feature-icon">🌐</div><h3 data-i18n="feat6_title">Multi-language</h3><p data-i18n="feat6_desc">Use CreditLens in English, Hindi, Swahili or French.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="cta-section reveal">
+        <h2 data-i18n="cta_title">Ready to see your Alt-Credit Score?</h2>
+        <p data-i18n="cta_sub">It takes under three minutes. No paperwork, no bureau pull — just the data your business already generates.</p>
+        <button class="pill-btn primary" id="cta-launch-btn" data-i18n="cta_btn">Launch CreditLens →</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <span data-i18n="footer_text">CreditLens — AI alternative credit scoring for small businesses in emerging markets. Demo build.</span>
+    </div>
+  </footer>
+</div>
+
+<!-- ============================= WIZARD APP VIEW ============================= -->
+<div id="app-view" class="hidden">
+  <div class="container">
+    <div class="app-header">
+      <div class="brand"><span class="logo-mark">📈</span><span data-i18n="brand">CreditLens</span></div>
+      <button class="pill-btn ghost" id="back-to-landing" data-i18n="back_home">← Home</button>
+    </div>
+
+    <div class="app-progress" id="app-progress">
+      <div class="prog-step active" data-step="1"><div class="circle">1</div><div class="label" data-i18n="prog1">Location</div></div>
+      <div class="prog-step" data-step="2"><div class="circle">2</div><div class="label" data-i18n="prog2">Business</div></div>
+      <div class="prog-step" data-step="3"><div class="circle">3</div><div class="label" data-i18n="prog3">Debt &amp; Loan</div></div>
+      <div class="prog-step" data-step="4"><div class="circle">4</div><div class="label" data-i18n="prog4">Score</div></div>
+    </div>
+
+    <!-- STEP 1: LOCATION -->
+    <div class="wizard-card" id="step-1">
+      <div class="wizard-step-title" data-i18n="s1_title">Where is your business based?</div>
+      <div class="wizard-step-sub" data-i18n="s1_sub">Spin the globe or use the dropdowns. Gold markers mark countries with premium business districts.</div>
+      <div class="location-layout">
+        <div>
+          <div class="globe-scene" id="globe-scene">
+            <div class="globe" id="globe">
+              <div class="globe-grid"></div>
+              <div id="marker-layer"></div>
+            </div>
+          </div>
+          <div class="globe-hint" data-i18n="s1_hint">🖱️ Drag to rotate · click a marker to select</div>
+          <div class="country-chip-grid" id="country-chip-grid"></div>
+        </div>
+        <div class="location-panel">
+          <div class="form-field">
+            <label data-i18n="lbl_country">Country</label>
+            <select id="sel-country"></select>
+          </div>
+          <div class="form-field">
+            <label data-i18n="lbl_state">State / Province</label>
+            <select id="sel-state"></select>
+          </div>
+          <div class="form-field">
+            <label data-i18n="lbl_city">City</label>
+            <select id="sel-city"></select>
+          </div>
+          <div id="premium-badge-holder"></div>
+          <div class="rails-box">
+            <h4 data-i18n="s1_rails_title">📡 Alternative data rails used in this market</h4>
+            <div id="rails-list"></div>
+          </div>
+        </div>
+      </div>
+      <div class="wizard-actions">
+        <span></span>
+        <button class="pill-btn primary" id="step1-next" data-i18n="btn_continue">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: BUSINESS PROFILE -->
+    <div class="wizard-card hidden" id="step-2">
+      <div class="wizard-step-title" data-i18n="s2_title">Tell us about your business</div>
+      <div class="wizard-step-sub" data-i18n="s2_sub">These alternative data points replace what a bank statement would normally show.</div>
+      <div class="form-grid">
+        <div class="form-field full">
+          <label data-i18n="lbl_bizname">Business name</label>
+          <input type="text" id="in-bizname" placeholder="e.g. Sunrise General Store" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_industry">Industry</label>
+          <select id="in-industry"></select>
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_years">Years operating <span class="hint-val" id="val-years">2</span></label>
+          <input type="range" id="in-years" min="0" max="30" step="0.5" value="2" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_employees">Employees <span class="hint-val" id="val-employees">3</span></label>
+          <input type="range" id="in-employees" min="0" max="50" step="1" value="3" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_revenue">Monthly revenue</label>
+          <input type="number" id="in-revenue" min="0" value="150000" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_txnvol">Monthly digital transaction volume</label>
+          <input type="number" id="in-txnvol" min="0" value="90000" />
+          <span class="field-note" data-i18n="s2_txnvol_note">Total value processed via UPI, mobile money, QR, POS, etc.</span>
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_freq">Digital payments per week <span class="hint-val" id="val-freq">15</span></label>
+          <input type="range" id="in-freq" min="0" max="50" step="1" value="15" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_inactive">Weeks with no digital activity (last 6mo) <span class="hint-val" id="val-inactive">1</span></label>
+          <input type="range" id="in-inactive" min="0" max="26" step="1" value="1" />
+        </div>
+        <div class="form-field full">
+          <label data-i18n="lbl_utility">On-time utility payment rate <span class="hint-val" id="val-utility">88%</span></label>
+          <input type="range" id="in-utility" min="0" max="100" step="1" value="88" />
+        </div>
+      </div>
+      <div class="wizard-actions">
+        <button class="pill-btn ghost" id="step2-back" data-i18n="btn_back">← Back</button>
+        <button class="pill-btn primary" id="step2-next" data-i18n="btn_continue">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: DEBT & LOAN -->
+    <div class="wizard-card hidden" id="step-3">
+      <div class="wizard-step-title" data-i18n="s3_title">Debt &amp; loan planning</div>
+      <div class="wizard-step-sub" data-i18n="s3_sub">Model a new loan and see the impact on your debt-to-income ratio, live.</div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label data-i18n="lbl_existemi">Existing monthly EMI</label>
+          <input type="number" id="in-existemi" min="0" value="4000" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_newloan">New loan amount</label>
+          <input type="number" id="in-newloan" min="0" value="200000" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_rate">Annual interest rate (%) <span class="hint-val" id="val-rate">14</span></label>
+          <input type="range" id="in-rate" min="1" max="36" step="0.5" value="14" />
+        </div>
+        <div class="form-field">
+          <label data-i18n="lbl_tenure">Tenure (months) <span class="hint-val" id="val-tenure">24</span></label>
+          <input type="range" id="in-tenure" min="3" max="84" step="1" value="24" />
+        </div>
+      </div>
+      <div class="emi-summary">
+        <div class="emi-tile"><span data-i18n="emi_monthly">Monthly EMI</span><b id="out-emi">—</b></div>
+        <div class="emi-tile"><span data-i18n="emi_interest">Total interest</span><b id="out-interest">—</b></div>
+        <div class="emi-tile"><span data-i18n="emi_total">Total payment</span><b id="out-total">—</b></div>
+        <div class="emi-tile"><span data-i18n="emi_dti">Debt-to-income</span><b id="out-dti">—</b></div>
+      </div>
+      <div class="dti-bar-wrap">
+        <div class="dti-bar-track"><div class="dti-bar-fill" id="dti-bar"></div><div class="dti-marker"></div></div>
+      </div>
+      <div class="dti-warning hidden" id="dti-warning-box">⚠️ <span data-i18n="dti_warn_text">Your combined debt-to-income ratio exceeds the healthy 45% threshold. Consider a smaller loan or longer tenure.</span></div>
+      <div class="wizard-actions">
+        <button class="pill-btn ghost" id="step3-back" data-i18n="btn_back">← Back</button>
+        <button class="pill-btn primary" id="step3-next" data-i18n="btn_calculate">Calculate My Score →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: DASHBOARD -->
+    <div class="wizard-card hidden" id="step-4">
+      <div class="dash-loading" id="dash-loading">
+        <div class="orbit-loader"><div></div><div></div><div></div></div>
+        <p data-i18n="dash_loading_title"><b>Computing your Alt-Credit Score…</b></p>
+        <div class="loading-msgs" id="loading-msgs" data-i18n="dash_loading_sub">Asking Gemini AI about local market demand…</div>
+      </div>
+
+      <div class="dash-result" id="dash-result">
+        <div class="dash-top">
+          <div class="gauge-wrap">
+            <svg viewBox="0 0 200 200">
+              <defs>
+                <linearGradient id="realGaugeGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#f5636b"/><stop offset="50%" stop-color="#f5b942"/><stop offset="100%" stop-color="#22d3a8"/>
+                </linearGradient>
+              </defs>
+              <circle cx="100" cy="100" r="86" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="16"/>
+              <circle id="real-gauge-circle" cx="100" cy="100" r="86" fill="none" stroke="url(#realGaugeGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="540.3" stroke-dashoffset="540.3" transform="rotate(-90 100 100)"/>
+            </svg>
+            <div class="gauge-center">
+              <div class="num" id="final-score-num">300</div>
+              <div class="max" data-i18n="gauge_max">out of 900</div>
+            </div>
+            <div class="tier-badge" id="tier-badge"></div>
+            <div class="tier-note" id="tier-note"></div>
+          </div>
+          <div>
+            <div class="dash-section-title">✨ <span data-i18n="dash_insights_title">AI-generated insights</span></div>
+            <div class="insight-cards" id="insight-cards"></div>
+          </div>
+        </div>
+
+        <div class="dash-section-title">📊 <span data-i18n="dash_factors_title">Factor-by-factor breakdown</span></div>
+        <div class="factor-detail-list" id="factor-detail-list"></div>
+
+        <div class="dash-section-title">🌍 <span data-i18n="dash_context_title">Market &amp; macro context</span></div>
+        <div class="macro-grid" id="macro-grid"></div>
+
+        <div class="dash-actions">
+          <button class="pill-btn ghost" id="restart-btn" data-i18n="btn_restart">↺ Start over</button>
+          <button class="pill-btn primary" id="edit-btn" data-i18n="btn_edit">← Edit inputs</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= CHATBOT ============================= -->
+<button id="chat-fab" title="CreditLens Assistant">💬<span class="ping"></span></button>
+<div id="chat-panel">
+  <div class="chat-head">
+    <div class="chat-head-title"><span class="dot-live"></span> <span data-i18n="chat_title">CreditLens Assistant</span></div>
+    <button class="chat-close" id="chat-close">✕</button>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-suggest" id="chat-suggest"></div>
+  <div class="chat-input-row">
+    <input type="text" id="chat-input" placeholder="Ask about your score, EMI, or a market..." />
+    <button class="chat-send" id="chat-send">➤</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   I18N
+   ===================================================================== */
+const I18N = {
+  en: {
+    brand:"CreditLens", nav_how:"How it works", nav_scoring:"Scoring", nav_countries:"Countries", nav_features:"Features", nav_launch:"Launch App",
+    hero_eyebrow:"AI-powered alternative credit scoring",
+    hero_title:'Make every small business <span class="gradient-text">bankable</span> — no credit history required',
+    hero_lead:"CreditLens computes a transparent 300–900 Alt-Credit Score using digital payments, utility reliability, business stability, debt burden, AI-estimated market demand, and macroeconomic context — for businesses across India, Nigeria, Kenya, Bangladesh, the Philippines and Indonesia.",
+    hero_cta_primary:"Get Your Alt-Credit Score →", hero_cta_secondary:"See how it works",
+    stat_countries:"Emerging markets", stat_factors:"Transparent factors", stat_scale:"Score scale", stat_hardcode:"Hardcoded outcomes",
+    chip_ai:"Gemini AI market analysis", chip_wb:"Live World Bank macro data",
+    mock_title:"Alt-Credit Score", mock_badge:"LIVE DEMO", mock_tier:"Watch it animate ↓",
+    f_digital:"Digital Payments", f_utility:"Utility Reliability", f_demand:"Market Demand (AI)", f_stability:"Business Stability", f_debt:"Debt Burden", f_macro:"Macroeconomic Context",
+    how_tag:"The Process", how_title:"Four steps to your score", how_sub:"A guided wizard collects alternative data and computes your score transparently — no bank statements or bureau history needed.",
+    how1_title:"Location", how1_desc:"Pick your country, state and city on an interactive 3D globe. We surface the local digital payment rails we'll analyze, like UPI or M-Pesa.",
+    how2_title:"Business Profile", how2_desc:"Tell us your industry, revenue, and digital payment activity — transaction volume, frequency, and utility bill reliability.",
+    how3_title:"Debt & Loan Planning", how3_desc:"Use the built-in EMI calculator to model a new loan and see your live debt-to-income ratio before you apply.",
+    how4_title:"Score Dashboard", how4_desc:"Our AI estimates local market demand and pulls live macroeconomic data, then renders your animated 300–900 score with a full breakdown.",
+    scoring_tag:"Fully Transparent", scoring_title:"Six weighted factors, zero black boxes", scoring_sub:"Every point of your score is explainable. Here's exactly how the composite is weighted.",
+    donut_label1:"100%", donut_label2:"Explainable",
+    countries_tag:"Where We Work", countries_title:"Built for emerging markets", countries_sub:"Each market has its own alternative data rails — CreditLens adapts to what businesses actually use.",
+    features_tag:"Under the Hood", features_title:"Everything a modern credit tool needs",
+    feat1_title:"AI Market Demand", feat1_desc:"Gemini 2.5 Flash analyzes local demand for your specific industry and city in real time — no static tables.",
+    feat2_title:"Live Macro Data", feat2_desc:"Inflation and GDP growth pulled straight from the World Bank Open Data API for your country.",
+    feat3_title:"EMI & DTI Planner", feat3_desc:"Model new loans instantly and see your debt-to-income ratio with a live 45% healthy-threshold warning.",
+    feat4_title:"3D Interactive Globe", feat4_desc:"Pick your market visually — premium business districts are highlighted right on the map.",
+    feat5_title:"AI Chat Assistant", feat5_desc:"A Gemini-powered chatbot guides you through the wizard and gives small-business finance tips.",
+    feat6_title:"Multi-language", feat6_desc:"Use CreditLens in English, Hindi, Swahili or French.",
+    cta_title:"Ready to see your Alt-Credit Score?", cta_sub:"It takes under three minutes. No paperwork, no bureau pull — just the data your business already generates.", cta_btn:"Launch CreditLens →",
+    footer_text:"CreditLens — AI alternative credit scoring for small businesses in emerging markets. Demo build.",
+    back_home:"← Home",
+    prog1:"Location", prog2:"Business", prog3:"Debt & Loan", prog4:"Score",
+    s1_title:"Where is your business based?", s1_sub:"Spin the globe or use the dropdowns. Gold markers mark countries with premium business districts.",
+    s1_hint:"🖱️ Drag to rotate · click a marker to select", s1_rails_title:"📡 Alternative data rails used in this market",
+    lbl_country:"Country", lbl_state:"State / Province", lbl_city:"City",
+    btn_continue:"Continue →", btn_back:"← Back", btn_calculate:"Calculate My Score →", btn_restart:"↺ Start over", btn_edit:"← Edit inputs",
+    s2_title:"Tell us about your business", s2_sub:"These alternative data points replace what a bank statement would normally show.",
+    lbl_bizname:"Business name", lbl_industry:"Industry", lbl_years:"Years operating", lbl_employees:"Employees", lbl_revenue:"Monthly revenue",
+    lbl_txnvol:"Monthly digital transaction volume", s2_txnvol_note:"Total value processed via UPI, mobile money, QR, POS, etc.",
+    lbl_freq:"Digital payments per week", lbl_inactive:"Weeks with no digital activity (last 6mo)", lbl_utility:"On-time utility payment rate",
+    s3_title:"Debt & loan planning", s3_sub:"Model a new loan and see the impact on your debt-to-income ratio, live.",
+    lbl_existemi:"Existing monthly EMI", lbl_newloan:"New loan amount", lbl_rate:"Annual interest rate (%)", lbl_tenure:"Tenure (months)",
+    emi_monthly:"Monthly EMI", emi_interest:"Total interest", emi_total:"Total payment", emi_dti:"Debt-to-income",
+    dti_warn_text:"Your combined debt-to-income ratio exceeds the healthy 45% threshold. Consider a smaller loan or longer tenure.",
+    dash_loading_title:"Computing your Alt-Credit Score…", dash_loading_sub:"Asking Gemini AI about local market demand…",
+    gauge_max:"out of 900", dash_insights_title:"AI-generated insights", dash_factors_title:"Factor-by-factor breakdown", dash_context_title:"Market & macro context",
+    chat_title:"CreditLens Assistant",
+  },
+  hi: {
+    brand:"क्रेडिटलेंस", nav_how:"यह कैसे काम करता है", nav_scoring:"स्कोरिंग", nav_countries:"देश", nav_features:"विशेषताएं", nav_launch:"ऐप लॉन्च करें",
+    hero_eyebrow:"एआई-संचालित वैकल्पिक क्रेडिट स्कोरिंग",
+    hero_title:'हर छोटे व्यवसाय को <span class="gradient-text">बैंक योग्य</span> बनाएं — क्रेडिट इतिहास की आवश्यकता नहीं',
+    hero_lead:"क्रेडिटलेंस डिजिटल भुगतान, उपयोगिता विश्वसनीयता, व्यवसाय स्थिरता, ऋण भार, एआई-अनुमानित बाजार मांग और व्यापक आर्थिक संदर्भ का उपयोग करके एक पारदर्शी 300–900 स्कोर की गणना करता है।",
+    hero_cta_primary:"अपना स्कोर प्राप्त करें →", hero_cta_secondary:"यह कैसे काम करता है देखें",
+    stat_countries:"उभरते बाजार", stat_factors:"पारदर्शी कारक", stat_scale:"स्कोर स्केल", stat_hardcode:"हार्डकोडेड परिणाम",
+    chip_ai:"जेमिनी एआई बाजार विश्लेषण", chip_wb:"लाइव विश्व बैंक डेटा",
+    mock_title:"अल्ट-क्रेडिट स्कोर", mock_badge:"लाइव डेमो", mock_tier:"एनिमेशन देखें ↓",
+    f_digital:"डिजिटल भुगतान", f_utility:"उपयोगिता विश्वसनीयता", f_demand:"बाजार मांग (एआई)", f_stability:"व्यवसाय स्थिरता", f_debt:"ऋण भार", f_macro:"व्यापक आर्थिक संदर्भ",
+    how_tag:"प्रक्रिया", how_title:"आपके स्कोर के लिए चार चरण", how_sub:"एक निर्देशित विज़ार्ड वैकल्पिक डेटा एकत्र करता है और पारदर्शी रूप से आपके स्कोर की गणना करता है।",
+    how1_title:"स्थान", how1_desc:"इंटरैक्टिव 3डी ग्लोब पर अपना देश, राज्य और शहर चुनें।",
+    how2_title:"व्यवसाय प्रोफ़ाइल", how2_desc:"अपना उद्योग, राजस्व और डिजिटल भुगतान गतिविधि बताएं।",
+    how3_title:"ऋण योजना", how3_desc:"अंतर्निहित ईएमआई कैलकुलेटर से नया ऋण मॉडल करें।",
+    how4_title:"स्कोर डैशबोर्ड", how4_desc:"हमारा एआई स्थानीय बाजार मांग का अनुमान लगाता है और आपका पूर्ण स्कोर दिखाता है।",
+    scoring_tag:"पूर्णतः पारदर्शी", scoring_title:"छह भारित कारक, शून्य ब्लैक बॉक्स", scoring_sub:"आपके स्कोर का हर बिंदु समझाने योग्य है।",
+    donut_label1:"100%", donut_label2:"व्याख्येय",
+    countries_tag:"हम कहां काम करते हैं", countries_title:"उभरते बाजारों के लिए निर्मित", countries_sub:"हर बाजार के अपने वैकल्पिक डेटा माध्यम हैं।",
+    features_tag:"तकनीकी विवरण", features_title:"एक आधुनिक क्रेडिट टूल की हर आवश्यकता",
+    feat1_title:"एआई बाजार मांग", feat1_desc:"जेमिनी 2.5 फ्लैश वास्तविक समय में स्थानीय मांग का विश्लेषण करता है।",
+    feat2_title:"लाइव मैक्रो डेटा", feat2_desc:"विश्व बैंक ओपन डेटा एपीआई से मुद्रास्फीति और जीडीपी वृद्धि।",
+    feat3_title:"ईएमआई और डीटीआई योजनाकार", feat3_desc:"नए ऋणों को तुरंत मॉडल करें और अपना ऋण-आय अनुपात देखें।",
+    feat4_title:"3डी इंटरैक्टिव ग्लोब", feat4_desc:"अपना बाजार दृष्टिगत रूप से चुनें — प्रीमियम व्यावसायिक क्षेत्र हाइलाइट किए गए हैं।",
+    feat5_title:"एआई चैट सहायक", feat5_desc:"एक जेमिनी-संचालित चैटबॉट आपको विज़ार्ड के माध्यम से मार्गदर्शन करता है।",
+    feat6_title:"बहु-भाषा", feat6_desc:"क्रेडिटलेंस को अंग्रेजी, हिंदी, स्वाहिली या फ्रेंच में उपयोग करें।",
+    cta_title:"अपना अल्ट-क्रेडिट स्कोर देखने के लिए तैयार हैं?", cta_sub:"तीन मिनट से भी कम समय लगता है। कोई कागजी कार्रवाई नहीं।", cta_btn:"क्रेडिटलेंस लॉन्च करें →",
+    footer_text:"क्रेडिटलेंस — उभरते बाजारों में छोटे व्यवसायों के लिए एआई वैकल्पिक क्रेडिट स्कोरिंग।",
+    back_home:"← होम",
+    prog1:"स्थान", prog2:"व्यवसाय", prog3:"ऋण योजना", prog4:"स्कोर",
+    s1_title:"आपका व्यवसाय कहाँ स्थित है?", s1_sub:"ग्लोब घुमाएं या ड्रॉपडाउन का उपयोग करें।",
+    s1_hint:"🖱️ घुमाने के लिए खींचें · चुनने के लिए मार्कर पर क्लिक करें", s1_rails_title:"📡 इस बाजार में उपयोग किए जाने वाले वैकल्पिक डेटा माध्यम",
+    lbl_country:"देश", lbl_state:"राज्य / प्रांत", lbl_city:"शहर",
+    btn_continue:"जारी रखें →", btn_back:"← वापस", btn_calculate:"मेरा स्कोर गणना करें →", btn_restart:"↺ फिर से शुरू करें", btn_edit:"← इनपुट संपादित करें",
+    s2_title:"अपने व्यवसाय के बारे में बताएं", s2_sub:"ये वैकल्पिक डेटा पॉइंट बैंक स्टेटमेंट की जगह लेते हैं।",
+    lbl_bizname:"व्यवसाय का नाम", lbl_industry:"उद्योग", lbl_years:"संचालन के वर्ष", lbl_employees:"कर्मचारी", lbl_revenue:"मासिक राजस्व",
+    lbl_txnvol:"मासिक डिजिटल लेनदेन मात्रा", s2_txnvol_note:"यूपीआई, मोबाइल मनी, क्यूआर, पीओएस आदि के माध्यम से संसाधित कुल मूल्य।",
+    lbl_freq:"प्रति सप्ताह डिजिटल भुगतान", lbl_inactive:"बिना डिजिटल गतिविधि के सप्ताह (पिछले 6 महीने)", lbl_utility:"समय पर उपयोगिता भुगतान दर",
+    s3_title:"ऋण योजना", s3_sub:"एक नया ऋण मॉडल करें और अपने ऋण-आय अनुपात पर प्रभाव को लाइव देखें।",
+    lbl_existemi:"मौजूदा मासिक ईएमआई", lbl_newloan:"नई ऋण राशि", lbl_rate:"वार्षिक ब्याज दर (%)", lbl_tenure:"अवधि (महीने)",
+    emi_monthly:"मासिक ईएमआई", emi_interest:"कुल ब्याज", emi_total:"कुल भुगतान", emi_dti:"ऋण-आय अनुपात",
+    dti_warn_text:"आपका संयुक्त ऋण-आय अनुपात स्वस्थ 45% सीमा से अधिक है।",
+    dash_loading_title:"आपका स्कोर गणना हो रहा है…", dash_loading_sub:"स्थानीय बाजार मांग के बारे में जेमिनी एआई से पूछा जा रहा है…",
+    gauge_max:"900 में से", dash_insights_title:"एआई-जनित अंतर्दृष्टि", dash_factors_title:"कारक-दर-कारक विवरण", dash_context_title:"बाजार और व्यापक संदर्भ",
+    chat_title:"क्रेडिटलेंस सहायक",
+  },
+  sw: {
+    brand:"CreditLens", nav_how:"Jinsi inavyofanya kazi", nav_scoring:"Ukadiriaji", nav_countries:"Nchi", nav_features:"Vipengele", nav_launch:"Fungua Programu",
+    hero_eyebrow:"Ukadiriaji wa mkopo mbadala unaotumia AI",
+    hero_title:'Fanya kila biashara ndogo <span class="gradient-text">iweze kukopesheka</span> — bila historia ya mkopo',
+    hero_lead:"CreditLens hukokotoa alama ya wazi ya 300–900 kwa kutumia malipo ya kidijitali, uaminifu wa bili za huduma, uthabiti wa biashara, mzigo wa deni, mahitaji ya soko yaliyokadiriwa na AI, na muktadha wa uchumi mkuu.",
+    hero_cta_primary:"Pata Alama Yako →", hero_cta_secondary:"Ona jinsi inavyofanya kazi",
+    stat_countries:"Masoko yanayoibukia", stat_factors:"Vipengele wazi", stat_scale:"Kiwango cha alama", stat_hardcode:"Matokeo yaliyowekwa ngumu",
+    chip_ai:"Uchambuzi wa soko wa Gemini AI", chip_wb:"Data ya uchumi ya Benki ya Dunia",
+    mock_title:"Alama ya Alt-Credit", mock_badge:"DEMO HAI", mock_tier:"Tazama ikisogea ↓",
+    f_digital:"Malipo ya Kidijitali", f_utility:"Uaminifu wa Huduma", f_demand:"Mahitaji ya Soko (AI)", f_stability:"Uthabiti wa Biashara", f_debt:"Mzigo wa Deni", f_macro:"Muktadha wa Uchumi",
+    how_tag:"Mchakato", how_title:"Hatua nne kufikia alama yako", how_sub:"Mwongozo hukusanya data mbadala na kukokotoa alama yako kwa uwazi.",
+    how1_title:"Mahali", how1_desc:"Chagua nchi, jimbo na jiji lako kwenye ramani ya 3D inayoingiliana.",
+    how2_title:"Wasifu wa Biashara", how2_desc:"Tuambie sekta yako, mapato, na shughuli za malipo ya kidijitali.",
+    how3_title:"Mipango ya Deni", how3_desc:"Tumia kikokotoo cha EMI kuiga mkopo mpya.",
+    how4_title:"Dashibodi ya Alama", how4_desc:"AI yetu inakadiria mahitaji ya soko la ndani na kuonyesha alama yako kamili.",
+    scoring_tag:"Uwazi Kamili", scoring_title:"Vipengele sita vyenye uzito, sifuri sanduku jeusi", scoring_sub:"Kila sehemu ya alama yako inaeleweka.",
+    donut_label1:"100%", donut_label2:"Inaeleweka",
+    countries_tag:"Tunapofanya Kazi", countries_title:"Imejengwa kwa masoko yanayoibukia", countries_sub:"Kila soko lina njia zake za data mbadala.",
+    features_tag:"Ndani ya Mfumo", features_title:"Kila kitu ambacho zana ya kisasa ya mkopo inahitaji",
+    feat1_title:"Mahitaji ya Soko ya AI", feat1_desc:"Gemini 2.5 Flash huchambua mahitaji ya ndani kwa wakati halisi.",
+    feat2_title:"Data ya Uchumi Hai", feat2_desc:"Mfumuko wa bei na ukuaji wa Pato la Taifa kutoka Benki ya Dunia.",
+    feat3_title:"Kipangaji cha EMI na DTI", feat3_desc:"Iga mikopo mipya papo hapo na uone uwiano wako wa deni kwa mapato.",
+    feat4_title:"Ramani ya 3D Inayoingiliana", feat4_desc:"Chagua soko lako kwa kuona — maeneo ya biashara ya hali ya juu yameangaziwa.",
+    feat5_title:"Msaidizi wa Gumzo la AI", feat5_desc:"Chatbot inayotumia Gemini inakuongoza kupitia mwongozo.",
+    feat6_title:"Lugha Nyingi", feat6_desc:"Tumia CreditLens kwa Kiingereza, Kihindi, Kiswahili au Kifaransa.",
+    cta_title:"Uko tayari kuona Alama yako ya Alt-Credit?", cta_sub:"Inachukua chini ya dakika tatu. Hakuna karatasi.", cta_btn:"Fungua CreditLens →",
+    footer_text:"CreditLens — Ukadiriaji wa mkopo mbadala wa AI kwa biashara ndogo katika masoko yanayoibukia.",
+    back_home:"← Nyumbani",
+    prog1:"Mahali", prog2:"Biashara", prog3:"Deni na Mkopo", prog4:"Alama",
+    s1_title:"Biashara yako iko wapi?", s1_sub:"Zungusha dunia au tumia menyu.",
+    s1_hint:"🖱️ Buruta kuzungusha · bofya alama kuchagua", s1_rails_title:"📡 Njia za data mbadala zinazotumika katika soko hili",
+    lbl_country:"Nchi", lbl_state:"Jimbo / Mkoa", lbl_city:"Jiji",
+    btn_continue:"Endelea →", btn_back:"← Rudi", btn_calculate:"Kokotoa Alama Yangu →", btn_restart:"↺ Anza upya", btn_edit:"← Hariri maingizo",
+    s2_title:"Tuambie kuhusu biashara yako", s2_sub:"Data hizi mbadala hubadilisha taarifa ya benki.",
+    lbl_bizname:"Jina la biashara", lbl_industry:"Sekta", lbl_years:"Miaka ya uendeshaji", lbl_employees:"Wafanyakazi", lbl_revenue:"Mapato ya kila mwezi",
+    lbl_txnvol:"Kiasi cha miamala ya kidijitali kwa mwezi", s2_txnvol_note:"Thamani jumla iliyoshughulikiwa kupitia M-Pesa, QR, POS, nk.",
+    lbl_freq:"Malipo ya kidijitali kwa wiki", lbl_inactive:"Wiki bila shughuli za kidijitali (miezi 6 iliyopita)", lbl_utility:"Kiwango cha malipo ya huduma kwa wakati",
+    s3_title:"Mipango ya deni na mkopo", s3_sub:"Iga mkopo mpya na uone athari kwa uwiano wako wa deni kwa mapato.",
+    lbl_existemi:"EMI ya sasa ya kila mwezi", lbl_newloan:"Kiasi cha mkopo mpya", lbl_rate:"Kiwango cha riba cha mwaka (%)", lbl_tenure:"Muda (miezi)",
+    emi_monthly:"EMI ya kila mwezi", emi_interest:"Riba jumla", emi_total:"Malipo jumla", emi_dti:"Deni kwa mapato",
+    dti_warn_text:"Uwiano wako wa deni kwa mapato umezidi kiwango cha afya cha 45%.",
+    dash_loading_title:"Inakokotoa Alama yako…", dash_loading_sub:"Inauliza Gemini AI kuhusu mahitaji ya soko la ndani…",
+    gauge_max:"kati ya 900", dash_insights_title:"Maarifa yaliyotengenezwa na AI", dash_factors_title:"Uchambuzi wa kila kipengele", dash_context_title:"Muktadha wa soko na uchumi",
+    chat_title:"Msaidizi wa CreditLens",
+  },
+  fr: {
+    brand:"CreditLens", nav_how:"Comment ça marche", nav_scoring:"Notation", nav_countries:"Pays", nav_features:"Fonctionnalités", nav_launch:"Lancer l'app",
+    hero_eyebrow:"Notation de crédit alternative propulsée par l'IA",
+    hero_title:'Rendez chaque petite entreprise <span class="gradient-text">finançable</span> — sans historique de crédit',
+    hero_lead:"CreditLens calcule un score Alt-Credit transparent de 300 à 900 à partir des paiements numériques, de la fiabilité des factures, de la stabilité de l'entreprise, de l'endettement, de la demande locale estimée par IA et du contexte macroéconomique.",
+    hero_cta_primary:"Obtenez votre score →", hero_cta_secondary:"Voir comment ça marche",
+    stat_countries:"Marchés émergents", stat_factors:"Facteurs transparents", stat_scale:"Échelle de score", stat_hardcode:"Résultats codés en dur",
+    chip_ai:"Analyse de marché par Gemini AI", chip_wb:"Données macro en direct (Banque Mondiale)",
+    mock_title:"Score Alt-Credit", mock_badge:"DÉMO EN DIRECT", mock_tier:"Regardez l'animation ↓",
+    f_digital:"Paiements numériques", f_utility:"Fiabilité des factures", f_demand:"Demande du marché (IA)", f_stability:"Stabilité de l'entreprise", f_debt:"Endettement", f_macro:"Contexte macroéconomique",
+    how_tag:"Le processus", how_title:"Quatre étapes vers votre score", how_sub:"Un assistant guidé collecte des données alternatives et calcule votre score en toute transparence.",
+    how1_title:"Localisation", how1_desc:"Choisissez votre pays, état et ville sur un globe 3D interactif.",
+    how2_title:"Profil d'entreprise", how2_desc:"Indiquez votre secteur, revenus et activité de paiement numérique.",
+    how3_title:"Planification de la dette", how3_desc:"Utilisez le calculateur d'EMI intégré pour modéliser un nouveau prêt.",
+    how4_title:"Tableau de bord du score", how4_desc:"Notre IA estime la demande locale et affiche votre score complet.",
+    scoring_tag:"Entièrement transparent", scoring_title:"Six facteurs pondérés, zéro boîte noire", scoring_sub:"Chaque point de votre score est explicable.",
+    donut_label1:"100%", donut_label2:"Explicable",
+    countries_tag:"Où nous travaillons", countries_title:"Conçu pour les marchés émergents", countries_sub:"Chaque marché a ses propres canaux de données alternatifs.",
+    features_tag:"Sous le capot", features_title:"Tout ce dont un outil de crédit moderne a besoin",
+    feat1_title:"Demande de marché IA", feat1_desc:"Gemini 2.5 Flash analyse la demande locale en temps réel.",
+    feat2_title:"Données macro en direct", feat2_desc:"Inflation et croissance du PIB directement depuis l'API de la Banque Mondiale.",
+    feat3_title:"Planificateur EMI et DTI", feat3_desc:"Modélisez de nouveaux prêts instantanément et voyez votre ratio d'endettement.",
+    feat4_title:"Globe 3D interactif", feat4_desc:"Choisissez votre marché visuellement — les quartiers d'affaires premium sont mis en évidence.",
+    feat5_title:"Assistant de chat IA", feat5_desc:"Un chatbot propulsé par Gemini vous guide à travers l'assistant.",
+    feat6_title:"Multilingue", feat6_desc:"Utilisez CreditLens en anglais, hindi, swahili ou français.",
+    cta_title:"Prêt à voir votre score Alt-Credit ?", cta_sub:"Cela prend moins de trois minutes. Aucune paperasse.", cta_btn:"Lancer CreditLens →",
+    footer_text:"CreditLens — Notation de crédit alternative par IA pour les petites entreprises des marchés émergents.",
+    back_home:"← Accueil",
+    prog1:"Localisation", prog2:"Entreprise", prog3:"Dette et prêt", prog4:"Score",
+    s1_title:"Où se trouve votre entreprise ?", s1_sub:"Faites tourner le globe ou utilisez les menus déroulants.",
+    s1_hint:"🖱️ Faites glisser pour pivoter · cliquez sur un marqueur", s1_rails_title:"📡 Canaux de données alternatifs utilisés sur ce marché",
+    lbl_country:"Pays", lbl_state:"État / Province", lbl_city:"Ville",
+    btn_continue:"Continuer →", btn_back:"← Retour", btn_calculate:"Calculer mon score →", btn_restart:"↺ Recommencer", btn_edit:"← Modifier les entrées",
+    s2_title:"Parlez-nous de votre entreprise", s2_sub:"Ces données alternatives remplacent un relevé bancaire classique.",
+    lbl_bizname:"Nom de l'entreprise", lbl_industry:"Secteur", lbl_years:"Années d'activité", lbl_employees:"Employés", lbl_revenue:"Revenu mensuel",
+    lbl_txnvol:"Volume de transactions numériques mensuel", s2_txnvol_note:"Valeur totale traitée via UPI, mobile money, QR, POS, etc.",
+    lbl_freq:"Paiements numériques par semaine", lbl_inactive:"Semaines sans activité numérique (6 derniers mois)", lbl_utility:"Taux de paiement des factures à temps",
+    s3_title:"Planification de la dette et du prêt", s3_sub:"Modélisez un nouveau prêt et observez l'impact sur votre ratio d'endettement en direct.",
+    lbl_existemi:"EMI mensuelle actuelle", lbl_newloan:"Montant du nouveau prêt", lbl_rate:"Taux d'intérêt annuel (%)", lbl_tenure:"Durée (mois)",
+    emi_monthly:"EMI mensuelle", emi_interest:"Intérêt total", emi_total:"Paiement total", emi_dti:"Endettement",
+    dti_warn_text:"Votre ratio d'endettement combiné dépasse le seuil sain de 45%.",
+    dash_loading_title:"Calcul de votre score Alt-Credit…", dash_loading_sub:"Interrogation de Gemini AI sur la demande du marché local…",
+    gauge_max:"sur 900", dash_insights_title:"Analyses générées par IA", dash_factors_title:"Répartition facteur par facteur", dash_context_title:"Contexte marché et macro",
+    chat_title:"Assistant CreditLens",
+  }
+};
+let currentLang = 'en';
+function applyLanguage(lang){
+  currentLang = lang;
+  const dict = I18N[lang] || I18N.en;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(dict[key] !== undefined) el.innerHTML = dict[key];
+  });
+  document.getElementById('lang-select').value = lang;
+}
+function t(key){ return (I18N[currentLang] && I18N[currentLang][key]) || (I18N.en[key]) || key; }
+
+/* =====================================================================
+   GLOBAL STATE
+   ===================================================================== */
+const state = {
+  locations: {}, industries: [],
+  location: { country:null, state:null, city:null },
+  business: {}, debt: {}, scoreResult: null,
+  chatHistory: [],
+};
+
+function fmtMoney(n){
+  const sym = (state.locations[state.location.country] || {}).currencySymbol || '';
+  return sym + Math.round(n).toLocaleString('en-US');
+}
+function toast(msg){
+  const box = document.getElementById('toast-box');
+  const el = document.createElement('div');
+  el.className='toast'; el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(),400); }, 4200);
+}
+
+/* =====================================================================
+   INIT / DATA LOAD
+   ===================================================================== */
+async function loadData(){
+  try{
+    const [locRes, indRes] = await Promise.all([
+      fetch('/api/locations'), fetch('/api/industries')
+    ]);
+    state.locations = await locRes.json();
+    state.industries = await indRes.json();
+  }catch(e){
+    toast('Could not reach the CreditLens backend. Please refresh.');
+    return;
+  }
+  populateIndustries();
+  populateCountrySelect();
+  buildCountryChips();
+  buildGlobeMarkers();
+  buildCountryCards();
+}
+
+function populateIndustries(){
+  const sel = document.getElementById('in-industry');
+  sel.innerHTML = state.industries.map(i=>`<option value="${i}">${i}</option>`).join('');
+}
+
+function populateCountrySelect(){
+  const sel = document.getElementById('sel-country');
+  sel.innerHTML = '<option value="">Select country…</option>' + Object.keys(state.locations).map(c=>`<option value="${c}">${c}</option>`).join('');
+  sel.addEventListener('change', ()=> selectCountry(sel.value));
+  document.getElementById('sel-state').addEventListener('change', (e)=> selectState(e.target.value));
+  document.getElementById('sel-city').addEventListener('change', (e)=> selectCity(e.target.value));
+}
+
+const COUNTRY_FLAGS = { India:'🇮🇳', Nigeria:'🇳🇬', Kenya:'🇰🇪', Bangladesh:'🇧🇩', Philippines:'🇵🇭', Indonesia:'🇮🇩' };
+
+function buildCountryChips(){
+  const wrap = document.getElementById('country-chip-grid');
+  wrap.innerHTML = Object.keys(state.locations).map(c=>
+    `<button type="button" class="country-chip" data-country="${c}">${COUNTRY_FLAGS[c]||'🌍'} ${c}</button>`
+  ).join('');
+  wrap.querySelectorAll('.country-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=> selectCountry(btn.dataset.country));
+  });
+}
+
+function buildCountryCards(){
+  const wrap = document.getElementById('countries-grid');
+  wrap.innerHTML = Object.entries(state.locations).map(([name,info])=>`
+    <div class="country-card reveal in">
+      <div class="flag">${COUNTRY_FLAGS[name]||'🌍'}</div>
+      <h4>${name}</h4>
+      <div>${info.dataRails.map(r=>`<span class="rail-chip">${r}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+/* =====================================================================
+   3D GLOBE
+   ===================================================================== */
+function latLngToTransform(lat, lng, radius){
+  return `rotateY(${lng}deg) rotateX(${-lat}deg) translateZ(${radius}px)`;
+}
+
+function buildGlobeMarkers(){
+  const layer = document.getElementById('marker-layer');
+  layer.innerHTML = '';
+  const radius = 132;
+  Object.entries(state.locations).forEach(([name, info])=>{
+    const [lat, lng] = info.coords;
+    const premiumCount = Object.values(info.states).reduce((acc,s)=>acc + Object.values(s.cities).filter(c=>c.premium).length, 0);
+    const marker = document.createElement('div');
+    marker.className = 'marker';
+    marker.style.transform = latLngToTransform(lat, lng - 90, radius);
+    marker.dataset.country = name;
+    marker.innerHTML = `<div class="marker-dot ${premiumCount>=2?'premium-rich':''}" title="${name}"></div>`;
+    marker.querySelector('.marker-dot').addEventListener('click', ()=> selectCountry(name));
+    layer.appendChild(marker);
+  });
+}
+
+function setupGlobeDrag(){
+  const scene = document.getElementById('globe-scene');
+  const globe = document.getElementById('globe');
+  let dragging=false, lastX=0, lastY=0, rotY=0, rotX=14;
+
+  function applyRot(){ globe.style.transform = `rotateY(${rotY}deg) rotateX(${rotX}deg)`; }
+
+  function start(x,y){ dragging=true; lastX=x; lastY=y; globe.classList.add('dragging'); }
+  function move(x,y){
+    if(!dragging) return;
+    const dx = x-lastX, dy = y-lastY;
+    rotY += dx*0.4; rotX = Math.max(-60, Math.min(60, rotX - dy*0.3));
+    lastX=x; lastY=y; applyRot();
+  }
+  function end(){ dragging=false; }
+
+  scene.addEventListener('mousedown', e=> start(e.clientX,e.clientY));
+  window.addEventListener('mousemove', e=> move(e.clientX,e.clientY));
+  window.addEventListener('mouseup', end);
+  scene.addEventListener('touchstart', e=>{ const t=e.touches[0]; start(t.clientX,t.clientY); }, {passive:true});
+  scene.addEventListener('touchmove', e=>{ const t=e.touches[0]; move(t.clientX,t.clientY); }, {passive:true});
+  scene.addEventListener('touchend', end);
+}
+
+/* =====================================================================
+   LOCATION SELECTION
+   ===================================================================== */
+function selectCountry(name){
+  if(!name || !state.locations[name]) return;
+  state.location.country = name; state.location.state = null; state.location.city = null;
+  document.getElementById('sel-country').value = name;
+
+  document.querySelectorAll('.marker-dot').forEach(d=>d.classList.remove('selected'));
+  const m = document.querySelector(`.marker[data-country="${name}"] .marker-dot`);
+  if(m) m.classList.add('selected');
+  document.querySelectorAll('.country-chip').forEach(c=>c.classList.toggle('active', c.dataset.country===name));
+
+  const info = state.locations[name];
+  const stateSel = document.getElementById('sel-state');
+  stateSel.innerHTML = Object.keys(info.states).map(s=>`<option value="${s}">${s}</option>`).join('');
+  selectState(Object.keys(info.states)[0]);
+
+  document.getElementById('rails-list').innerHTML = info.dataRails.map(r=>`<span class="rail-chip">${r}</span>`).join('');
+}
+
+function selectState(name){
+  if(!name) return;
+  state.location.state = name;
+  document.getElementById('sel-state').value = name;
+  const info = state.locations[state.location.country];
+  const citySel = document.getElementById('sel-city');
+  const cities = info.states[name].cities;
+  citySel.innerHTML = Object.entries(cities).map(([c,meta])=>`<option value="${c}">${meta.premium?'⭐ ':''}${c}</option>`).join('');
+  selectCity(Object.keys(cities)[0]);
+}
+
+function selectCity(name){
+  if(!name) return;
+  state.location.city = name;
+  document.getElementById('sel-city').value = name;
+  const info = state.locations[state.location.country];
+  const meta = info.states[state.location.state].cities[name];
+  const holder = document.getElementById('premium-badge-holder');
+  holder.innerHTML = meta.premium ? `<div class="premium-badge">⭐ Premium Business District</div>` : '';
+}
+
+/* =====================================================================
+   WIZARD NAVIGATION
+   ===================================================================== */
+function showLanding(){
+  document.getElementById('landing-view').classList.remove('hidden');
+  document.getElementById('app-view').classList.add('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function showApp(){
+  document.getElementById('landing-view').classList.add('hidden');
+  document.getElementById('app-view').classList.remove('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(!state.location.country) selectCountry(Object.keys(state.locations)[0]);
+}
+function goToStep(n){
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('step-'+i).classList.toggle('hidden', i!==n);
+  });
+  document.querySelectorAll('.prog-step').forEach(el=>{
+    const s = parseInt(el.dataset.step);
+    el.classList.toggle('active', s===n);
+    el.classList.toggle('done', s<n);
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.getElementById('nav-launch-btn').addEventListener('click', showApp);
+document.getElementById('hero-launch-btn').addEventListener('click', showApp);
+document.getElementById('cta-launch-btn').addEventListener('click', showApp);
+document.getElementById('back-to-landing').addEventListener('click', showLanding);
+document.getElementById('step1-next').addEventListener('click', ()=>{
+  if(!state.location.country){ toast('Please select a location.'); return; }
+  goToStep(2);
+});
+document.getElementById('step2-back').addEventListener('click', ()=> goToStep(1));
+document.getElementById('step3-back').addEventListener('click', ()=> goToStep(2));
+document.getElementById('edit-btn').addEventListener('click', ()=> goToStep(3));
+document.getElementById('restart-btn').addEventListener('click', ()=>{
+  goToStep(1);
+});
+
+document.getElementById('step2-next').addEventListener('click', ()=>{
+  const name = document.getElementById('in-bizname').value.trim();
+  if(!name){ toast('Please enter a business name.'); return; }
+  state.business = {
+    businessName: name,
+    industry: document.getElementById('in-industry').value,
+    yearsOperating: parseFloat(document.getElementById('in-years').value),
+    employees: parseInt(document.getElementById('in-employees').value),
+    monthlyRevenue: parseFloat(document.getElementById('in-revenue').value || 0),
+    monthlyDigitalTxnVolume: parseFloat(document.getElementById('in-txnvol').value || 0),
+    digitalPaymentFrequencyPerWeek: parseFloat(document.getElementById('in-freq').value),
+    weeksNoDigitalActivity6mo: parseFloat(document.getElementById('in-inactive').value),
+    utilityOnTimeRate: parseFloat(document.getElementById('in-utility').value),
+  };
+  goToStep(3);
+});
+
+/* live-updating range labels */
+function bindRangeLabel(rangeId, labelId, suffix){
+  const r = document.getElementById(rangeId), l = document.getElementById(labelId);
+  r.addEventListener('input', ()=> l.textContent = r.value + (suffix||''));
+}
+bindRangeLabel('in-years','val-years');
+bindRangeLabel('in-employees','val-employees');
+bindRangeLabel('in-freq','val-freq');
+bindRangeLabel('in-inactive','val-inactive');
+bindRangeLabel('in-utility','val-utility','%');
+bindRangeLabel('in-rate','val-rate');
+bindRangeLabel('in-tenure','val-tenure');
+
+/* EMI live calc (client-side mirror of backend formula, for instant feedback) */
+function computeEmiClient(principal, annualRate, tenureMonths){
+  const r = annualRate/12/100;
+  let emi;
+  if(r<=0) emi = principal/tenureMonths;
+  else { const f = Math.pow(1+r, tenureMonths); emi = principal*r*f/(f-1); }
+  const totalPayment = emi*tenureMonths;
+  const totalInterest = totalPayment - principal;
+  return {emi, totalPayment, totalInterest};
+}
+
+function updateEmiLive(){
+  const existEmi = parseFloat(document.getElementById('in-existemi').value || 0);
+  const principal = parseFloat(document.getElementById('in-newloan').value || 0);
+  const rate = parseFloat(document.getElementById('in-rate').value);
+  const tenure = parseInt(document.getElementById('in-tenure').value);
+  const {emi, totalPayment, totalInterest} = computeEmiClient(principal, rate, tenure);
+  const revenue = (state.business.monthlyRevenue) || 1;
+  const dti = ((existEmi+emi)/Math.max(revenue,1))*100;
+
+  document.getElementById('out-emi').textContent = fmtMoney(emi);
+  document.getElementById('out-interest').textContent = fmtMoney(totalInterest);
+  document.getElementById('out-total').textContent = fmtMoney(totalPayment);
+  document.getElementById('out-dti').textContent = dti.toFixed(1)+'%';
+
+  const bar = document.getElementById('dti-bar');
+  const pct = Math.min(100, dti);
+  bar.style.width = pct+'%';
+  bar.style.background = dti>45 ? 'var(--danger)' : (dti>30 ? 'var(--amber)' : 'var(--accent)');
+  document.getElementById('dti-warning-box').classList.toggle('hidden', dti<=45);
+}
+['in-existemi','in-newloan','in-rate','in-tenure'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', updateEmiLive);
+});
+
+document.getElementById('step3-next').addEventListener('click', async ()=>{
+  state.debt = {
+    existingEmi: parseFloat(document.getElementById('in-existemi').value || 0),
+    newLoanAmount: parseFloat(document.getElementById('in-newloan').value || 0),
+    annualInterestRate: parseFloat(document.getElementById('in-rate').value),
+    tenureMonths: parseInt(document.getElementById('in-tenure').value),
+  };
+  goToStep(4);
+  await runScoreCalculation();
+});
+
+/* =====================================================================
+   SCORE CALCULATION + DASHBOARD RENDER
+   ===================================================================== */
+const LOADING_MESSAGES = [
+  'Asking Gemini AI about local market demand…',
+  'Pulling live inflation & GDP data from the World Bank…',
+  'Scoring digital payment consistency…',
+  'Evaluating debt-to-income health…',
+  'Composing your transparent factor breakdown…',
+];
+let loadingMsgTimer=null;
+
+async function runScoreCalculation(){
+  document.getElementById('dash-loading').style.display='block';
+  document.getElementById('dash-result').style.display='none';
+  let mi=0;
+  const msgEl = document.getElementById('loading-msgs');
+  msgEl.textContent = LOADING_MESSAGES[0];
+  loadingMsgTimer = setInterval(()=>{ mi=(mi+1)%LOADING_MESSAGES.length; msgEl.textContent = LOADING_MESSAGES[mi]; }, 1600);
+
+  try{
+    const resp = await fetch('/api/score', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ location: state.location, business: state.business, debt: state.debt })
+    });
+    if(!resp.ok) throw new Error('Score request failed');
+    const data = await resp.json();
+    state.scoreResult = data;
+    renderDashboard(data);
+  }catch(e){
+    toast('Could not compute your score. Please try again.');
+  }finally{
+    clearInterval(loadingMsgTimer);
+    document.getElementById('dash-loading').style.display='none';
+    document.getElementById('dash-result').style.display='block';
+  }
+}
+
+function renderDashboard(data){
+  const circumference = 2*Math.PI*86;
+  const circle = document.getElementById('real-gauge-circle');
+  const fraction = (data.score - 300)/600;
+  circle.setAttribute('stroke-dasharray', circumference.toFixed(1));
+  circle.style.transition = 'none';
+  circle.setAttribute('stroke-dashoffset', circumference.toFixed(1));
+  void circle.offsetWidth;
+  circle.style.transition = 'stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1)';
+  requestAnimationFrame(()=>{
+    circle.setAttribute('stroke-dashoffset', (circumference*(1-fraction)).toFixed(1));
+  });
+
+  animateNumber(document.getElementById('final-score-num'), 300, data.score, 1600);
+
+  const badge = document.getElementById('tier-badge');
+  badge.style.background = data.tier.color+'22';
+  badge.style.color = data.tier.color;
+  badge.style.border = `1px solid ${data.tier.color}55`;
+  badge.textContent = data.tier.label;
+  document.getElementById('tier-note').textContent = data.tier.note;
+
+  document.getElementById('insight-cards').innerHTML = data.aiInsights.map(i=>
+    `<div class="insight-card"><span class="ico">💡</span><span>${i}</span></div>`
+  ).join('');
+
+  const colorFor = s => s>=70 ? 'var(--accent)' : (s>=40 ? 'var(--amber)' : 'var(--danger)');
+  document.getElementById('factor-detail-list').innerHTML = data.factors.map(f=>`
+    <div class="factor-detail-item">
+      <div class="factor-detail-top">
+        <span class="fname">${f.label} <span class="factor-detail-weight">(${f.weight}% weight)</span></span>
+        <span class="fscore" style="color:${colorFor(f.rawScore)}">${f.rawScore}/100</span>
+      </div>
+      <div class="factor-bar-track"><div class="factor-bar-fill" style="width:${f.rawScore}%; background:${colorFor(f.rawScore)}"></div></div>
+      <div class="factor-detail-desc">${f.detail}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('macro-grid').innerHTML = `
+    <div class="macro-tile"><span>Local Market Demand (AI)</span><b>${data.marketDemand.demandScore}/100 · ${data.marketDemand.trend}</b>
+      <div class="factor-detail-desc">${data.marketDemand.reasoning}</div>
+      <span class="source-tag ${data.marketDemand.source==='fallback'?'fallback':''}">${data.marketDemand.source==='gemini'?'✨ Gemini AI':'Deterministic estimate'}</span>
+    </div>
+    <div class="macro-tile"><span>Macroeconomic Context</span><b>Inflation ${data.macro.inflation}% · GDP growth ${data.macro.gdpGrowth}%</b>
+      <div class="factor-detail-desc">As of ${data.macro.asOfYear}. Score ${data.macro.score}/100.</div>
+      <span class="source-tag ${data.macro.source==='fallback'?'fallback':''}">${data.macro.source==='worldbank'?'🌍 World Bank live':'Fallback reference'}</span>
+    </div>
+  `;
+}
+
+function animateNumber(el, from, to, duration){
+  const start = performance.now();
+  function tick(now){
+    const p = Math.min(1, (now-start)/duration);
+    const eased = 1 - Math.pow(1-p, 3);
+    el.textContent = Math.round(from + (to-from)*eased);
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* =====================================================================
+   LANDING PAGE ANIMATIONS (mock gauge + bars + donut + scroll reveal)
+   ===================================================================== */
+function animateMockCard(){
+  const circumference = 327;
+  const circle = document.getElementById('mock-gauge-circle');
+  const targetScore = 742, fraction = (targetScore-300)/600;
+  circle.style.transition = 'stroke-dashoffset 2s cubic-bezier(.2,.8,.2,1)';
+  setTimeout(()=> circle.setAttribute('stroke-dashoffset', (circumference*(1-fraction)).toFixed(1)), 400);
+  animateNumber(document.getElementById('mock-score-num'), 300, targetScore, 2000);
+  setTimeout(()=>{
+    document.getElementById('mf1').style.width='82%';
+    document.getElementById('mf2').style.width='90%';
+    document.getElementById('mf3').style.width='71%';
+  }, 500);
+}
+
+function buildDonut(){
+  const svg = document.getElementById('donut-svg');
+  const data = [
+    {v:35, c:'#38bdf8'}, {v:15,c:'#818cf8'}, {v:15,c:'#a78bfa'}, {v:15,c:'#f5b942'}, {v:12,c:'#22d3a8'}, {v:8,c:'#f5636b'}
+  ];
+  const r = 80, cx=100, cy=100, circumference = 2*Math.PI*r;
+  let offset = 0;
+  let html = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="22"/>`;
+  data.forEach(d=>{
+    const len = circumference*(d.v/100);
+    html += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.c}" stroke-width="22"
+      stroke-dasharray="${len.toFixed(1)} ${(circumference-len).toFixed(1)}" stroke-dashoffset="${(-offset).toFixed(1)}"
+      transform="rotate(-90 ${cx} ${cy})" stroke-linecap="butt" style="transition: stroke-dasharray 1.2s ease;"/>`;
+    offset += len;
+  });
+  svg.innerHTML = html;
+}
+
+function setupScrollReveal(){
+  const targets = document.querySelectorAll('.reveal');
+  const factorFills = document.querySelectorAll('#scoring .factor-bar-fill');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        if(e.target.id==='scoring' || e.target.contains(document.querySelector('.factors-panel'))){}
+      }
+    });
+  }, {threshold:0.15});
+  targets.forEach(t=>io.observe(t));
+
+  const factorsIo = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        factorFills.forEach(f=> f.style.width = f.dataset.target+'%');
+        factorsIo.disconnect();
+      }
+    });
+  }, {threshold:0.3});
+  const panel = document.querySelector('.factors-panel');
+  if(panel) factorsIo.observe(panel);
+}
+
+/* =====================================================================
+   CHATBOT
+   ===================================================================== */
+const CHAT_SUGGESTIONS = [
+  'How is my score calculated?',
+  'What is a healthy DTI ratio?',
+  'Which countries do you support?',
+];
+
+function initChat(){
+  const messages = document.getElementById('chat-messages');
+  addBotMessage("Hi! I'm the CreditLens Assistant 👋 Ask me about your Alt-Credit Score, the wizard, EMI planning, or small-business finance tips.");
+  const sugg = document.getElementById('chat-suggest');
+  sugg.innerHTML = CHAT_SUGGESTIONS.map(s=>`<button type="button">${s}</button>`).join('');
+  sugg.querySelectorAll('button').forEach(b=> b.addEventListener('click', ()=> sendChat(b.textContent)));
+}
+
+function addBotMessage(text){
+  const messages = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className='msg bot'; el.textContent = text;
+  messages.appendChild(el); messages.scrollTop = messages.scrollHeight;
+  state.chatHistory.push({role:'bot', text});
+}
+function addUserMessage(text){
+  const messages = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className='msg user'; el.textContent = text;
+  messages.appendChild(el); messages.scrollTop = messages.scrollHeight;
+  state.chatHistory.push({role:'user', text});
+}
+function showTyping(){
+  const messages = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className='typing-indicator'; el.id='typing-ind';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  messages.appendChild(el); messages.scrollTop = messages.scrollHeight;
+}
+function hideTyping(){ const el = document.getElementById('typing-ind'); if(el) el.remove(); }
+
+async function sendChat(text){
+  text = text.trim();
+  if(!text) return;
+  addUserMessage(text);
+  document.getElementById('chat-input').value='';
+  showTyping();
+  try{
+    const resp = await fetch('/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ message:text, history: state.chatHistory.slice(-10) })
+    });
+    const data = await resp.json();
+    hideTyping();
+    addBotMessage(data.reply || "Sorry, I couldn't process that.");
+  }catch(e){
+    hideTyping();
+    addBotMessage("I'm having trouble connecting right now. Please try again in a moment.");
+  }
+}
+
+document.getElementById('chat-fab').addEventListener('click', ()=>{
+  document.getElementById('chat-panel').classList.add('open');
+});
+document.getElementById('chat-close').addEventListener('click', ()=>{
+  document.getElementById('chat-panel').classList.remove('open');
+});
+document.getElementById('chat-send').addEventListener('click', ()=> sendChat(document.getElementById('chat-input').value));
+document.getElementById('chat-input').addEventListener('keydown', (e)=>{ if(e.key==='Enter') sendChat(e.target.value); });
+
+/* =====================================================================
+   BOOTSTRAP
+   ===================================================================== */
+document.getElementById('lang-select').addEventListener('change', (e)=> applyLanguage(e.target.value));
+
+window.addEventListener('DOMContentLoaded', async ()=>{
+  applyLanguage('en');
+  await loadData();
+  setupGlobeDrag();
+  buildDonut();
+  setupScrollReveal();
+  initChat();
+  updateEmiLive();
+  setTimeout(animateMockCard, 600);
+});
+</script>
+</body>
+</html>
