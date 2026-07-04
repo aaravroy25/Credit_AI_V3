@@ -1091,33 +1091,112 @@ function fmtMoney(n){
   const sym = (state.locations[state.location.country] || {}).currencySymbol || '';
   return sym + Math.round(n).toLocaleString('en-US');
 }
-function toast(msg){
+function toast(msg, duration){
   const box = document.getElementById('toast-box');
   const el = document.createElement('div');
   el.className='toast'; el.textContent = msg;
   box.appendChild(el);
-  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(),400); }, 4200);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(),400); }, duration || 4200);
 }
 
 /* =====================================================================
    INIT / DATA LOAD
    ===================================================================== */
+// Embedded fallback so Step 1 (and the industry list) never renders empty —
+// used only if the Flask backend can't be reached (e.g. index.html opened
+// directly instead of via `python app.py`, or a cold/unreachable server).
+// Live scoring still requires the backend; this only covers reference data.
+const FALLBACK_LOCATIONS = {
+  "India": { "iso3":"IND", "currency":"INR", "currencySymbol":"₹", "coords":[22.9734,78.6569],
+    "dataRails":["UPI real-time payments","Aadhaar e-KYC","Bharat Bill Pay (BBPS)","GST e-invoicing trail"],
+    "states": {
+      "Maharashtra": {"cities":{"Mumbai":{"premium":true},"Pune":{"premium":true},"Nagpur":{"premium":false}}},
+      "Delhi NCR": {"cities":{"New Delhi":{"premium":true},"Gurugram":{"premium":true},"Noida":{"premium":false}}},
+      "Karnataka": {"cities":{"Bengaluru":{"premium":true},"Mysuru":{"premium":false},"Mangaluru":{"premium":false}}},
+      "Tamil Nadu": {"cities":{"Chennai":{"premium":true},"Coimbatore":{"premium":false},"Madurai":{"premium":false}}},
+      "Gujarat": {"cities":{"Ahmedabad":{"premium":true},"Surat":{"premium":true},"Vadodara":{"premium":false}}},
+      "West Bengal": {"cities":{"Kolkata":{"premium":true},"Siliguri":{"premium":false}}}
+    }},
+  "Nigeria": { "iso3":"NGA", "currency":"NGN", "currencySymbol":"₦", "coords":[9.0820,8.6753],
+    "dataRails":["Mobile money (OPay, PalmPay, Moniepoint)","BVN e-KYC","USSD banking logs","Paystack/Flutterwave merchant data"],
+    "states": {
+      "Lagos": {"cities":{"Lagos Island":{"premium":true},"Ikeja":{"premium":true},"Ajah":{"premium":false}}},
+      "Federal Capital Territory": {"cities":{"Abuja":{"premium":true},"Gwagwalada":{"premium":false}}},
+      "Rivers": {"cities":{"Port Harcourt":{"premium":true},"Bonny":{"premium":false}}},
+      "Kano": {"cities":{"Kano City":{"premium":false},"Wudil":{"premium":false}}},
+      "Oyo": {"cities":{"Ibadan":{"premium":false},"Ogbomosho":{"premium":false}}}
+    }},
+  "Kenya": { "iso3":"KEN", "currency":"KES", "currencySymbol":"KSh", "coords":[-0.0236,37.9062],
+    "dataRails":["M-Pesa mobile money","Huduma Namba e-KYC","Till Number merchant records","Sacco micro-lending data"],
+    "states": {
+      "Nairobi County": {"cities":{"Nairobi CBD":{"premium":true},"Westlands":{"premium":true},"Kibera":{"premium":false}}},
+      "Mombasa County": {"cities":{"Mombasa Island":{"premium":true},"Nyali":{"premium":false}}},
+      "Kisumu County": {"cities":{"Kisumu City":{"premium":false},"Ahero":{"premium":false}}},
+      "Nakuru County": {"cities":{"Nakuru Town":{"premium":false},"Naivasha":{"premium":false}}}
+    }},
+  "Bangladesh": { "iso3":"BGD", "currency":"BDT", "currencySymbol":"৳", "coords":[23.6850,90.3563],
+    "dataRails":["bKash / Nagad mobile wallets","NID e-KYC","SME cluster trade data","Ready-made garments export ledger"],
+    "states": {
+      "Dhaka Division": {"cities":{"Dhaka":{"premium":true},"Narayanganj":{"premium":true},"Gazipur":{"premium":false}}},
+      "Chattogram Division": {"cities":{"Chattogram":{"premium":true},"Cox's Bazar":{"premium":false}}},
+      "Khulna Division": {"cities":{"Khulna":{"premium":false},"Jessore":{"premium":false}}},
+      "Rajshahi Division": {"cities":{"Rajshahi":{"premium":false},"Bogura":{"premium":false}}}
+    }},
+  "Philippines": { "iso3":"PHL", "currency":"PHP", "currencySymbol":"₱", "coords":[12.8797,121.7740],
+    "dataRails":["GCash / Maya e-wallets","PhilSys National ID","QR Ph unified payments","Sari-sari store POS ledgers"],
+    "states": {
+      "Metro Manila": {"cities":{"Makati":{"premium":true},"Quezon City":{"premium":true},"Taguig":{"premium":true}}},
+      "Cebu": {"cities":{"Cebu City":{"premium":true},"Mandaue":{"premium":false}}},
+      "Davao Region": {"cities":{"Davao City":{"premium":false},"Tagum":{"premium":false}}}
+    }},
+  "Indonesia": { "iso3":"IDN", "currency":"IDR", "currencySymbol":"Rp", "coords":[-0.7893,113.9213],
+    "dataRails":["OVO / GoPay / DANA e-wallets","QRIS unified QR payments","Warung merchant ledgers","KYC via Dukcapil"],
+    "states": {
+      "DKI Jakarta": {"cities":{"Central Jakarta":{"premium":true},"South Jakarta":{"premium":true},"North Jakarta":{"premium":false}}},
+      "Bali": {"cities":{"Denpasar":{"premium":true},"Ubud":{"premium":true},"Singaraja":{"premium":false}}},
+      "West Java": {"cities":{"Bandung":{"premium":false},"Bekasi":{"premium":false}}},
+      "East Java": {"cities":{"Surabaya":{"premium":true},"Malang":{"premium":false}}}
+    }}
+};
+const FALLBACK_INDUSTRIES = [
+  "Retail & General Trade","Food & Beverage","Agriculture & Agri-Trade","Manufacturing & Light Industry",
+  "Textiles & Apparel","Transportation & Logistics","Construction & Building Materials",
+  "Beauty & Personal Care Services","Repair & Technical Services","Education & Tutoring",
+  "Healthcare & Pharmacy","Handicrafts & Artisan Goods","Digital Services & IT","Hospitality & Tourism","Wholesale Trade"
+];
+
+let backendReachable = true;
+let resolveDataLoaded;
+const dataLoadedPromise = new Promise(res => { resolveDataLoaded = res; });
+
 async function loadData(){
   try{
     const [locRes, indRes] = await Promise.all([
       fetch('/api/locations'), fetch('/api/industries')
     ]);
-    state.locations = await locRes.json();
-    state.industries = await indRes.json();
+    if(!locRes.ok || !indRes.ok) throw new Error('Non-OK response from backend');
+    const locJson = await locRes.json();
+    const indJson = await indRes.json();
+    if(!locJson || typeof locJson !== 'object' || Object.keys(locJson).length === 0){
+      throw new Error('Empty locations payload');
+    }
+    state.locations = locJson;
+    state.industries = (Array.isArray(indJson) && indJson.length) ? indJson : FALLBACK_INDUSTRIES;
+    backendReachable = true;
   }catch(e){
-    toast('Could not reach the CreditLens backend. Please refresh.');
-    return;
+    console.warn('CreditLens: backend unreachable, using embedded demo data.', e);
+    state.locations = FALLBACK_LOCATIONS;
+    state.industries = FALLBACK_INDUSTRIES;
+    backendReachable = false;
   }
-  populateIndustries();
-  populateCountrySelect();
-  buildCountryChips();
-  buildGlobeMarkers();
-  buildCountryCards();
+  // Each population step is isolated so one failure can't blank out the rest.
+  [populateIndustries, populateCountrySelect, buildCountryChips, buildGlobeMarkers, buildCountryCards].forEach(fn=>{
+    try{ fn(); }catch(e){ console.error('CreditLens: UI population step failed:', fn.name, e); }
+  });
+  if(!backendReachable){
+    toast('⚠️ Could not reach the CreditLens Flask backend — showing offline demo locations. Run "python app.py" and open it via http://localhost:5000 for live AI scoring.', 9000);
+  }
+  resolveDataLoaded();
 }
 
 function populateIndustries(){
@@ -1253,10 +1332,11 @@ function showLanding(){
   document.getElementById('app-view').classList.add('hidden');
   window.scrollTo({top:0, behavior:'smooth'});
 }
-function showApp(){
+async function showApp(){
   document.getElementById('landing-view').classList.add('hidden');
   document.getElementById('app-view').classList.remove('hidden');
   window.scrollTo({top:0, behavior:'smooth'});
+  await dataLoadedPromise;
   if(!state.location.country) selectCountry(Object.keys(state.locations)[0]);
 }
 function goToStep(n){
@@ -1392,7 +1472,9 @@ async function runScoreCalculation(){
     state.scoreResult = data;
     renderDashboard(data);
   }catch(e){
-    toast('Could not compute your score. Please try again.');
+    toast(backendReachable
+      ? 'Could not compute your score. Please try again.'
+      : '⚠️ The CreditLens Flask backend is unreachable, so your score can\'t be calculated. Run "python app.py" and open it via http://localhost:5000.', 9000);
   }finally{
     clearInterval(loadingMsgTimer);
     document.getElementById('dash-loading').style.display='none';
