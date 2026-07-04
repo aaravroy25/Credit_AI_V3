@@ -1091,6 +1091,16 @@ def get_tier(score):
 # Routes
 # ---------------------------------------------------------------------------
 
+@app.after_request
+def add_no_cache_headers(response):
+    # /api/* payloads (especially locations/industries) must never be served
+    # stale by a browser or intermediary cache after a data update.
+    if request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+    return response
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
