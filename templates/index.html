@@ -350,13 +350,13 @@ footer{ position:relative; z-index:1; padding:40px 0; border-top:1px solid var(-
 }
 .marker{ position:absolute; top:50%; left:50%; width:0; height:0; transform-style:preserve-3d; }
 .marker-dot{
-  position:absolute; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%;
-  background: var(--primary); box-shadow: 0 0 12px 3px rgba(56,189,248,0.8);
+  position:absolute; width:9px; height:9px; margin:-4.5px 0 0 -4.5px; border-radius:50%;
+  background: var(--primary); box-shadow: 0 0 8px 2px rgba(56,189,248,0.8);
   cursor:pointer; transition: transform .2s ease, background .3s ease, box-shadow .3s ease;
   animation: markerPulse 2.4s ease-in-out infinite;
 }
-.marker-dot.premium-rich{ background: var(--gold); box-shadow: 0 0 14px 4px rgba(245,192,77,0.85); }
-.marker-dot:hover, .marker-dot.selected{ transform: scale(1.6); background:var(--accent); box-shadow:0 0 20px 6px rgba(34,211,168,0.9); }
+.marker-dot.premium-rich{ background: var(--gold); box-shadow: 0 0 10px 3px rgba(245,192,77,0.85); }
+.marker-dot:hover, .marker-dot.selected{ transform: scale(2.2); background:var(--accent); box-shadow:0 0 18px 6px rgba(34,211,168,0.9); }
 @keyframes markerPulse{ 0%,100%{ filter:brightness(1);} 50%{ filter:brightness(1.35);} }
 
 .globe-hint{ text-align:center; font-size:0.76rem; color:var(--text-dimmer); margin-top:14px; }
@@ -577,7 +577,7 @@ footer{ position:relative; z-index:1; padding:40px 0; border-top:1px solid var(-
           <button class="pill-btn ghost" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})" data-i18n="hero_cta_secondary">See how it works</button>
         </div>
         <div class="hero-stats">
-          <div class="hero-stat"><b>6</b><span data-i18n="stat_countries">Emerging markets</span></div>
+          <div class="hero-stat"><b>190+</b><span data-i18n="stat_countries">Emerging markets</span></div>
           <div class="hero-stat"><b>6</b><span data-i18n="stat_factors">Transparent factors</span></div>
           <div class="hero-stat"><b>300–900</b><span data-i18n="stat_scale">Score scale</span></div>
           <div class="hero-stat"><b>0%</b><span data-i18n="stat_hardcode">Hardcoded outcomes</span></div>
@@ -1134,7 +1134,7 @@ function toast(msg, duration){
 // directly instead of via `python app.py`, or a cold/unreachable server).
 // Live scoring still requires the backend; this only covers reference data.
 const FALLBACK_LOCATIONS = {
-  "India": { "iso3":"IND", "currency":"INR", "currencySymbol":"₹", "coords":[22.9734,78.6569],
+  "India": { "iso2":"IN", "iso3":"IND", "currency":"INR", "currencySymbol":"₹", "coords":[22.9734,78.6569],
     "dataRails":["UPI real-time payments","Aadhaar e-KYC","Bharat Bill Pay (BBPS)","GST e-invoicing trail"],
     "states": {
       "Maharashtra": {"cities":{"Mumbai":{"premium":true},"Pune":{"premium":true},"Nagpur":{"premium":false}}},
@@ -1144,7 +1144,7 @@ const FALLBACK_LOCATIONS = {
       "Gujarat": {"cities":{"Ahmedabad":{"premium":true},"Surat":{"premium":true},"Vadodara":{"premium":false}}},
       "West Bengal": {"cities":{"Kolkata":{"premium":true},"Siliguri":{"premium":false}}}
     }},
-  "Nigeria": { "iso3":"NGA", "currency":"NGN", "currencySymbol":"₦", "coords":[9.0820,8.6753],
+  "Nigeria": { "iso2":"NG", "iso3":"NGA", "currency":"NGN", "currencySymbol":"₦", "coords":[9.0820,8.6753],
     "dataRails":["Mobile money (OPay, PalmPay, Moniepoint)","BVN e-KYC","USSD banking logs","Paystack/Flutterwave merchant data"],
     "states": {
       "Lagos": {"cities":{"Lagos Island":{"premium":true},"Ikeja":{"premium":true},"Ajah":{"premium":false}}},
@@ -1153,7 +1153,7 @@ const FALLBACK_LOCATIONS = {
       "Kano": {"cities":{"Kano City":{"premium":false},"Wudil":{"premium":false}}},
       "Oyo": {"cities":{"Ibadan":{"premium":false},"Ogbomosho":{"premium":false}}}
     }},
-  "Kenya": { "iso3":"KEN", "currency":"KES", "currencySymbol":"KSh", "coords":[-0.0236,37.9062],
+  "Kenya": { "iso2":"KE", "iso3":"KEN", "currency":"KES", "currencySymbol":"KSh", "coords":[-0.0236,37.9062],
     "dataRails":["M-Pesa mobile money","Huduma Namba e-KYC","Till Number merchant records","Sacco micro-lending data"],
     "states": {
       "Nairobi County": {"cities":{"Nairobi CBD":{"premium":true},"Westlands":{"premium":true},"Kibera":{"premium":false}}},
@@ -1161,7 +1161,7 @@ const FALLBACK_LOCATIONS = {
       "Kisumu County": {"cities":{"Kisumu City":{"premium":false},"Ahero":{"premium":false}}},
       "Nakuru County": {"cities":{"Nakuru Town":{"premium":false},"Naivasha":{"premium":false}}}
     }},
-  "Bangladesh": { "iso3":"BGD", "currency":"BDT", "currencySymbol":"৳", "coords":[23.6850,90.3563],
+  "Bangladesh": { "iso2":"BD", "iso3":"BGD", "currency":"BDT", "currencySymbol":"৳", "coords":[23.6850,90.3563],
     "dataRails":["bKash / Nagad mobile wallets","NID e-KYC","SME cluster trade data","Ready-made garments export ledger"],
     "states": {
       "Dhaka Division": {"cities":{"Dhaka":{"premium":true},"Narayanganj":{"premium":true},"Gazipur":{"premium":false}}},
@@ -1169,14 +1169,14 @@ const FALLBACK_LOCATIONS = {
       "Khulna Division": {"cities":{"Khulna":{"premium":false},"Jessore":{"premium":false}}},
       "Rajshahi Division": {"cities":{"Rajshahi":{"premium":false},"Bogura":{"premium":false}}}
     }},
-  "Philippines": { "iso3":"PHL", "currency":"PHP", "currencySymbol":"₱", "coords":[12.8797,121.7740],
+  "Philippines": { "iso2":"PH", "iso3":"PHL", "currency":"PHP", "currencySymbol":"₱", "coords":[12.8797,121.7740],
     "dataRails":["GCash / Maya e-wallets","PhilSys National ID","QR Ph unified payments","Sari-sari store POS ledgers"],
     "states": {
       "Metro Manila": {"cities":{"Makati":{"premium":true},"Quezon City":{"premium":true},"Taguig":{"premium":true}}},
       "Cebu": {"cities":{"Cebu City":{"premium":true},"Mandaue":{"premium":false}}},
       "Davao Region": {"cities":{"Davao City":{"premium":false},"Tagum":{"premium":false}}}
     }},
-  "Indonesia": { "iso3":"IDN", "currency":"IDR", "currencySymbol":"Rp", "coords":[-0.7893,113.9213],
+  "Indonesia": { "iso2":"ID", "iso3":"IDN", "currency":"IDR", "currencySymbol":"Rp", "coords":[-0.7893,113.9213],
     "dataRails":["OVO / GoPay / DANA e-wallets","QRIS unified QR payments","Warung merchant ledgers","KYC via Dukcapil"],
     "states": {
       "DKI Jakarta": {"cities":{"Central Jakarta":{"premium":true},"South Jakarta":{"premium":true},"North Jakarta":{"premium":false}}},
@@ -1239,12 +1239,25 @@ function populateCountrySelect(){
   document.getElementById('sel-city').addEventListener('change', (e)=> selectCity(e.target.value));
 }
 
-const COUNTRY_FLAGS = { India:'🇮🇳', Nigeria:'🇳🇬', Kenya:'🇰🇪', Bangladesh:'🇧🇩', Philippines:'🇵🇭', Indonesia:'🇮🇩' };
+// Flag emoji is derived generically from the ISO 3166-1 alpha-2 code (two
+// regional-indicator symbols), so it scales to every country without a
+// hand-maintained per-country lookup table.
+function isoToFlagEmoji(iso2){
+  if(!iso2 || iso2.length!==2) return '🌍';
+  const codePoints = iso2.toUpperCase().split('').map(c => 0x1F1E6 + (c.charCodeAt(0) - 65));
+  return String.fromCodePoint(...codePoints);
+}
+
+// A curated subset for the one-click quick-select strip and the landing
+// page's country showcase — the full ~196-country catalog is always
+// available via the Country dropdown itself.
+const POPULAR_COUNTRIES = ['India','Nigeria','Kenya','Bangladesh','Philippines','Indonesia','Brazil','Mexico','Egypt','Pakistan','Vietnam','South Africa'];
 
 function buildCountryChips(){
   const wrap = document.getElementById('country-chip-grid');
-  wrap.innerHTML = Object.keys(state.locations).map(c=>
-    `<button type="button" class="country-chip" data-country="${c}">${COUNTRY_FLAGS[c]||'🌍'} ${c}</button>`
+  const popular = POPULAR_COUNTRIES.filter(c => state.locations[c]);
+  wrap.innerHTML = popular.map(c=>
+    `<button type="button" class="country-chip" data-country="${c}">${isoToFlagEmoji(state.locations[c].iso2)} ${c}</button>`
   ).join('');
   wrap.querySelectorAll('.country-chip').forEach(btn=>{
     btn.addEventListener('click', ()=> selectCountry(btn.dataset.country));
@@ -1253,12 +1266,16 @@ function buildCountryChips(){
 
 function buildCountryCards(){
   const wrap = document.getElementById('countries-grid');
-  wrap.innerHTML = Object.entries(state.locations).map(([name,info])=>`
+  const popular = POPULAR_COUNTRIES.filter(c => state.locations[c]);
+  wrap.innerHTML = popular.map(name=>{
+    const info = state.locations[name];
+    return `
     <div class="country-card reveal in">
-      <div class="flag">${COUNTRY_FLAGS[name]||'🌍'}</div>
+      <div class="flag">${isoToFlagEmoji(info.iso2)}</div>
       <h4>${name}</h4>
       <div>${info.dataRails.map(r=>`<span class="rail-chip">${r}</span>`).join('')}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 /* =====================================================================
