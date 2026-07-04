@@ -299,6 +299,25 @@ footer{ position:relative; z-index:1; padding:40px 0; border-top:1px solid var(-
 }
 .field-note{ font-size:0.74rem; color:var(--text-dimmer); }
 
+.currency-input{ position:relative; display:flex; align-items:center; }
+.currency-input .currency-prefix{
+  position:absolute; left:14px; color:var(--text-dim); font-weight:700; font-size:0.9rem; pointer-events:none;
+}
+.currency-input input{ padding-left:46px; width:100%; }
+
+.slider-wrap{ position:relative; padding-top:6px; }
+.slider-bubble{
+  position:absolute; top:-14px; left:0; transform:translateX(-50%);
+  background: var(--grad-brand); color:#06101f; font-size:0.72rem; font-weight:800;
+  padding:3px 9px; border-radius:8px; white-space:nowrap; opacity:0; pointer-events:none;
+  transition: opacity .15s ease; z-index:3;
+}
+.slider-bubble::after{
+  content:''; position:absolute; bottom:-4px; left:50%; transform:translateX(-50%);
+  border:4px solid transparent; border-top-color:#38bdf8;
+}
+.slider-bubble.show{ opacity:1; }
+
 .wizard-actions{ display:flex; justify-content:space-between; margin-top:34px; }
 
 /* Step 1 - globe */
@@ -743,33 +762,33 @@ footer{ position:relative; z-index:1; padding:40px 0; border-top:1px solid var(-
           <select id="in-industry"></select>
         </div>
         <div class="form-field">
-          <label data-i18n="lbl_years">Years operating <span class="hint-val" id="val-years">2</span></label>
-          <input type="range" id="in-years" min="0" max="30" step="0.5" value="2" />
+          <label><span data-i18n="lbl_years">Years operating</span> <span class="hint-val" id="val-years">2</span></label>
+          <div class="slider-wrap"><input type="range" id="in-years" min="0" max="30" step="0.5" value="2" /><div class="slider-bubble" id="bubble-years"></div></div>
         </div>
         <div class="form-field">
-          <label data-i18n="lbl_employees">Employees <span class="hint-val" id="val-employees">3</span></label>
-          <input type="range" id="in-employees" min="0" max="50" step="1" value="3" />
+          <label><span data-i18n="lbl_employees">Employees</span> <span class="hint-val" id="val-employees">3</span></label>
+          <div class="slider-wrap"><input type="range" id="in-employees" min="0" max="50" step="1" value="3" /><div class="slider-bubble" id="bubble-employees"></div></div>
         </div>
         <div class="form-field">
           <label data-i18n="lbl_revenue">Monthly revenue</label>
-          <input type="number" id="in-revenue" min="0" value="150000" />
+          <div class="currency-input"><span class="currency-prefix" data-currency-prefix>₹</span><input type="number" id="in-revenue" min="0" value="150000" /></div>
         </div>
         <div class="form-field">
           <label data-i18n="lbl_txnvol">Monthly digital transaction volume</label>
-          <input type="number" id="in-txnvol" min="0" value="90000" />
+          <div class="currency-input"><span class="currency-prefix" data-currency-prefix>₹</span><input type="number" id="in-txnvol" min="0" value="90000" /></div>
           <span class="field-note" data-i18n="s2_txnvol_note">Total value processed via UPI, mobile money, QR, POS, etc.</span>
         </div>
         <div class="form-field">
-          <label data-i18n="lbl_freq">Digital payments per week <span class="hint-val" id="val-freq">15</span></label>
-          <input type="range" id="in-freq" min="0" max="50" step="1" value="15" />
+          <label><span data-i18n="lbl_freq">Digital payments per week</span> <span class="hint-val" id="val-freq">15</span></label>
+          <div class="slider-wrap"><input type="range" id="in-freq" min="0" max="50" step="1" value="15" /><div class="slider-bubble" id="bubble-freq"></div></div>
         </div>
         <div class="form-field">
-          <label data-i18n="lbl_inactive">Weeks with no digital activity (last 6mo) <span class="hint-val" id="val-inactive">1</span></label>
-          <input type="range" id="in-inactive" min="0" max="26" step="1" value="1" />
+          <label><span data-i18n="lbl_inactive">Weeks with no digital activity (last 6mo)</span> <span class="hint-val" id="val-inactive">1</span></label>
+          <div class="slider-wrap"><input type="range" id="in-inactive" min="0" max="26" step="1" value="1" /><div class="slider-bubble" id="bubble-inactive"></div></div>
         </div>
         <div class="form-field full">
-          <label data-i18n="lbl_utility">On-time utility payment rate <span class="hint-val" id="val-utility">88%</span></label>
-          <input type="range" id="in-utility" min="0" max="100" step="1" value="88" />
+          <label><span data-i18n="lbl_utility">On-time utility payment rate</span> <span class="hint-val" id="val-utility">88%</span></label>
+          <div class="slider-wrap"><input type="range" id="in-utility" min="0" max="100" step="1" value="88" /><div class="slider-bubble" id="bubble-utility"></div></div>
         </div>
       </div>
       <div class="wizard-actions">
@@ -785,19 +804,19 @@ footer{ position:relative; z-index:1; padding:40px 0; border-top:1px solid var(-
       <div class="form-grid">
         <div class="form-field">
           <label data-i18n="lbl_existemi">Existing monthly EMI</label>
-          <input type="number" id="in-existemi" min="0" value="4000" />
+          <div class="currency-input"><span class="currency-prefix" data-currency-prefix>₹</span><input type="number" id="in-existemi" min="0" value="4000" /></div>
         </div>
         <div class="form-field">
           <label data-i18n="lbl_newloan">New loan amount</label>
-          <input type="number" id="in-newloan" min="0" value="200000" />
+          <div class="currency-input"><span class="currency-prefix" data-currency-prefix>₹</span><input type="number" id="in-newloan" min="0" value="200000" /></div>
         </div>
         <div class="form-field">
-          <label data-i18n="lbl_rate">Annual interest rate (%) <span class="hint-val" id="val-rate">14</span></label>
-          <input type="range" id="in-rate" min="1" max="36" step="0.5" value="14" />
+          <label><span data-i18n="lbl_rate">Annual interest rate (%)</span> <span class="hint-val" id="val-rate">14</span></label>
+          <div class="slider-wrap"><input type="range" id="in-rate" min="1" max="36" step="0.5" value="14" /><div class="slider-bubble" id="bubble-rate"></div></div>
         </div>
         <div class="form-field">
-          <label data-i18n="lbl_tenure">Tenure (months) <span class="hint-val" id="val-tenure">24</span></label>
-          <input type="range" id="in-tenure" min="3" max="84" step="1" value="24" />
+          <label><span data-i18n="lbl_tenure">Tenure (months)</span> <span class="hint-val" id="val-tenure">24</span></label>
+          <div class="slider-wrap"><input type="range" id="in-tenure" min="3" max="84" step="1" value="24" /><div class="slider-bubble" id="bubble-tenure"></div></div>
         </div>
       </div>
       <div class="emi-summary">
@@ -1301,6 +1320,7 @@ function selectCountry(name){
   selectState(Object.keys(info.states)[0]);
 
   document.getElementById('rails-list').innerHTML = info.dataRails.map(r=>`<span class="rail-chip">${r}</span>`).join('');
+  updateCurrencyPrefixes();
 }
 
 function selectState(name){
@@ -1383,18 +1403,54 @@ document.getElementById('step2-next').addEventListener('click', ()=>{
   goToStep(3);
 });
 
-/* live-updating range labels */
-function bindRangeLabel(rangeId, labelId, suffix){
-  const r = document.getElementById(rangeId), l = document.getElementById(labelId);
-  r.addEventListener('input', ()=> l.textContent = r.value + (suffix||''));
+/* live-updating range labels + a floating value bubble that tracks the thumb while dragging */
+function bindRangeLabel(rangeId, labelId, suffix, bubbleId){
+  const r = document.getElementById(rangeId);
+  const l = document.getElementById(labelId);
+  const bubble = bubbleId ? document.getElementById(bubbleId) : null;
+
+  function render(){
+    const text = r.value + (suffix||'');
+    if(l) l.textContent = text;
+    if(bubble){
+      const min = parseFloat(r.min || 0), max = parseFloat(r.max || 100), val = parseFloat(r.value);
+      const pct = max>min ? (val-min)/(max-min) : 0;
+      const thumbW = 18;
+      const trackW = r.offsetWidth || 1;
+      const x = thumbW/2 + pct*(trackW - thumbW);
+      bubble.style.left = x + 'px';
+      bubble.textContent = text;
+    }
+  }
+  render();
+  r.addEventListener('input', render);
+  if(bubble){
+    const show = ()=>{ render(); bubble.classList.add('show'); };
+    const hide = ()=> bubble.classList.remove('show');
+    r.addEventListener('pointerdown', show);
+    r.addEventListener('touchstart', show, {passive:true});
+    r.addEventListener('pointerup', hide);
+    r.addEventListener('touchend', hide);
+    r.addEventListener('blur', hide);
+  }
+  window.addEventListener('resize', render);
 }
-bindRangeLabel('in-years','val-years');
-bindRangeLabel('in-employees','val-employees');
-bindRangeLabel('in-freq','val-freq');
-bindRangeLabel('in-inactive','val-inactive');
-bindRangeLabel('in-utility','val-utility','%');
-bindRangeLabel('in-rate','val-rate');
-bindRangeLabel('in-tenure','val-tenure');
+bindRangeLabel('in-years','val-years','', 'bubble-years');
+bindRangeLabel('in-employees','val-employees','', 'bubble-employees');
+bindRangeLabel('in-freq','val-freq','', 'bubble-freq');
+bindRangeLabel('in-inactive','val-inactive','', 'bubble-inactive');
+bindRangeLabel('in-utility','val-utility','%', 'bubble-utility');
+bindRangeLabel('in-rate','val-rate','', 'bubble-rate');
+bindRangeLabel('in-tenure','val-tenure','', 'bubble-tenure');
+
+/* currency prefixes on money inputs, synced to the selected country */
+function getCurrencySymbol(){
+  return ((state.locations[state.location.country] || {}).currencySymbol) || '₹';
+}
+function updateCurrencyPrefixes(){
+  const sym = getCurrencySymbol();
+  document.querySelectorAll('[data-currency-prefix]').forEach(el=> el.textContent = sym);
+}
 
 /* EMI live calc (client-side mirror of backend formula, for instant feedback) */
 function computeEmiClient(principal, annualRate, tenureMonths){
