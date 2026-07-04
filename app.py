@@ -312,10 +312,16 @@ def get_ai_insights(context):
         prompt = (
             "You are a credit analyst assistant for CreditLens, an alternative credit scoring "
             "platform for small businesses in emerging markets. Given the computed factor scores "
-            "below (each 0-100, higher is better), write 4 to 6 short, specific, actionable insight "
-            "strings for the business owner. Mention concrete strengths and concrete areas to "
-            "improve, referencing the actual numbers where useful. Respond with ONLY a compact "
-            'JSON array of strings, e.g. ["insight one", "insight two", ...]. No markdown fences.\n\n'
+            "below (each 0-100, higher is better), write 5 to 8 short, specific, actionable insight "
+            "strings for the business owner. For EVERY factor scoring below 70, include one concrete, "
+            "specific recommendation on exactly what the business can change to raise it — reference "
+            "real numbers (e.g. a target weekly transaction frequency, a target reduction in inactive "
+            "weeks, a target on-time utility payment rate, a safe debt-to-income range, or ways to "
+            "build business stability such as formalizing operations or steady staffing). For factors "
+            "at or above 70, briefly call out the strength instead. Local Market Demand and "
+            "Macroeconomic Context are not directly controllable by the business — note that briefly "
+            "rather than inventing an action for them. Respond with ONLY a compact JSON array of "
+            'strings, e.g. ["insight one", "insight two", ...]. No markdown fences.\n\n'
             f"Business: {context['businessName']} ({context['industry']}) in {context['city']}, "
             f"{context['state']}, {context['country']}.\n"
             f"Final Alt-Credit Score: {context['score']} / 900 (tier: {context['tier']}).\n"
@@ -326,17 +332,16 @@ def get_ai_insights(context):
             f"Local Market Demand: {context['demand']}/100 (weight 12%)\n"
             f"Macroeconomic Context: {context['macro']}/100 (weight 8%)\n"
         )
-        text = call_gemini(prompt, temperature=0.6, max_output_tokens=512)
+        text = call_gemini(prompt, temperature=0.6, max_output_tokens=700)
         parsed = _extract_json_block(text)
         if isinstance(parsed, list) and parsed:
-            return [str(x)[:220] for x in parsed][:6]
+            return [str(x)[:260] for x in parsed][:8]
         return fallback_insights
     except Exception:
         return fallback_insights
 
 
 def build_fallback_insights(context):
-    insights = []
     factor_labels = {
         "digital": "Digital Payment Health",
         "utility": "Utility Bill Reliability",
@@ -345,35 +350,55 @@ def build_fallback_insights(context):
         "demand": "Local Market Demand",
         "macro": "Macroeconomic Context",
     }
+    factor_advice = {
+        "digital": (
+            f"Increase consistent digital transaction volume and weekly frequency in {context['city']} "
+            "— aim for revenue-matched digital volume and 20+ payments/week to lift this 35%-weighted factor."
+        ),
+        "utility": (
+            "Set up auto-pay or reminders for utility bills to push your on-time rate toward 95%+ "
+            "— one of the fastest, lowest-effort factors to improve."
+        ),
+        "stability": (
+            "Business Stability grows with time in operation, steady staffing, and consistent revenue "
+            "growth — formalizing operations and building a longer track record raises this over time."
+        ),
+        "debt": (
+            "Keep combined EMIs below roughly 30-35% of monthly revenue when taking on new credit to "
+            "protect this factor and stay well under the 45% warning threshold."
+        ),
+        "demand": (
+            f"Local demand for {context['industry'].lower()} in {context['city']} is a market factor "
+            "outside direct control, but diversifying into adjacent, higher-demand offerings can help."
+        ),
+        "macro": (
+            "Reflects national inflation and GDP trends for lender context only — not directly "
+            "controllable by an individual business."
+        ),
+    }
     scored = {k: context[k] for k in factor_labels}
     best_key = max(scored, key=scored.get)
-    worst_key = min(scored, key=scored.get)
-    insights.append(
-        f"Your strongest factor is {factor_labels[best_key]} at {scored[best_key]}/100 — "
+
+    insights = [
+        f"✅ Your strongest factor is {factor_labels[best_key]} at {scored[best_key]}/100 — "
         "lenders will view this favorably."
-    )
-    insights.append(
-        f"{factor_labels[worst_key]} at {scored[worst_key]}/100 is your biggest opportunity to "
-        "improve your score."
-    )
+    ]
+    for key, label in factor_labels.items():
+        if scored[key] < 70:
+            insights.append(f"⚠️ {label} is {scored[key]}/100 — {factor_advice[key]}")
+
     if context["dti"] > 45:
         insights.append(
             f"Your debt-to-income ratio is {context['dti']}%, above the recommended 45% threshold. "
             "Consider a smaller loan amount or longer tenure."
         )
-    else:
+
+    if len(insights) == 1:
         insights.append(
-            f"Your debt-to-income ratio of {context['dti']}% is within a healthy range for new credit."
+            "All six factors are scoring well (70+/100) — keep up your current digital payment and "
+            "bill payment habits to maintain this score."
         )
-    insights.append(
-        f"Increasing consistent digital transaction volume in {context['city']} can meaningfully "
-        "lift your Digital Payment Health score, the highest-weighted factor at 35%."
-    )
-    insights.append(
-        f"Maintaining on-time utility payments strengthens the Utility Bill Reliability factor, "
-        "a low-effort way to build score history."
-    )
-    return insights[:5]
+    return insights[:8]
 
 
 def chat_with_gemini(message, history):

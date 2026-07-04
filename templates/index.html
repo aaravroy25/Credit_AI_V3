@@ -420,6 +420,12 @@ footer{ position:relative; z-index:1; padding:40px 0; border-top:1px solid var(-
   display:flex; align-items:center; gap:8px;
 }
 .tier-note{ text-align:center; color:var(--text-dim); font-size:0.82rem; margin-top:10px; max-width:280px; }
+.composite-pct{ text-align:center; color:var(--text-dimmer); font-size:0.76rem; margin-top:6px; font-weight:600; }
+.offline-banner{
+  background: rgba(245,185,66,0.12); border:1px solid rgba(245,185,66,0.35); color:#fcd980;
+  padding:12px 16px; border-radius:12px; font-size:0.84rem; margin-bottom:24px; line-height:1.5;
+}
+.offline-banner code{ background:rgba(0,0,0,0.25); padding:1px 6px; border-radius:6px; font-size:0.8em; }
 
 .insight-cards{ display:flex; flex-direction:column; gap:12px; }
 .insight-card{
@@ -844,6 +850,7 @@ footer{ position:relative; z-index:1; padding:40px 0; border-top:1px solid var(-
       </div>
 
       <div class="dash-result" id="dash-result">
+        <div class="offline-banner hidden" id="offline-banner">⚠️ Offline demo estimate — the CreditLens backend wasn't reachable, so this score was computed locally and is not a live AI result. Run <code>python app.py</code> and open it via http://localhost:5000 for a live-scored result.</div>
         <div class="dash-top">
           <div class="gauge-wrap">
             <svg viewBox="0 0 200 200">
@@ -860,6 +867,7 @@ footer{ position:relative; z-index:1; padding:40px 0; border-top:1px solid var(-
               <div class="max" data-i18n="gauge_max">out of 900</div>
             </div>
             <div class="tier-badge" id="tier-badge"></div>
+            <div class="composite-pct" id="composite-pct"></div>
             <div class="tier-note" id="tier-note"></div>
           </div>
           <div>
@@ -1523,14 +1531,20 @@ async function runScoreCalculation(){
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ location: state.location, business: state.business, debt: state.debt })
     });
-    if(!resp.ok) throw new Error('Score request failed');
+    if(!resp.ok) throw new Error('Score request failed: HTTP '+resp.status);
     const data = await resp.json();
     state.scoreResult = data;
     renderDashboard(data);
   }catch(e){
-    toast(backendReachable
-      ? 'Could not compute your score. Please try again.'
-      : '⚠️ The CreditLens Flask backend is unreachable, so your score can\'t be calculated. Run "python app.py" and open it via http://localhost:5000.', 9000);
+    // The backend is the only source of live Gemini/World Bank scoring, so if it's
+    // unreachable we compute a deterministic offline approximation client-side
+    // instead of leaving the dashboard blank — same fallback philosophy as the
+    // backend itself, just surfaced clearly instead of silently.
+    console.warn('CreditLens: /api/score failed, using offline fallback score.', e);
+    const data = computeOfflineFallbackScore();
+    state.scoreResult = data;
+    renderDashboard(data);
+    toast('⚠️ Could not reach the CreditLens backend — showing an offline estimate instead. Run "python app.py" and open it via http://localhost:5000 for a live AI-scored result.', 9000);
   }finally{
     clearInterval(loadingMsgTimer);
     document.getElementById('dash-loading').style.display='none';
@@ -1538,10 +1552,128 @@ async function runScoreCalculation(){
   }
 }
 
+/* =====================================================================
+   OFFLINE FALLBACK SCORING (client-side)
+   Mirrors app.py's deterministic math exactly for the four factors that
+   don't need an external API, and uses a stable hash-based estimate for
+   the two AI/data-driven factors — only used when /api/score can't be
+   reached, and always clearly labeled as an offline estimate.
+   ===================================================================== */
+function clampNum(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+function round1(n){ return Math.round(n*10)/10; }
+
+function stablePseudoScore(parts, lo, hi){
+  const str = parts.join('|');
+  let hash = 5381;
+  for(let i=0;i<str.length;i++){ hash = ((hash*33) ^ str.charCodeAt(i)) >>> 0; }
+  const bucket = (hash % 1000) / 1000;
+  return round1(lo + bucket*(hi-lo));
+}
+
+function scoreDigitalPaymentHealthClient(monthlyRevenue, txnVolume, freqPerWeek, weeksInactive){
+  const revenue = Math.max(1, monthlyRevenue||0);
+  const volumeScore = clampNum((txnVolume||0)/revenue, 0, 1)*100;
+  const freqScore = clampNum((freqPerWeek||0)/20, 0, 1)*100;
+  const consistencyScore = (1 - clampNum((weeksInactive||0)/26, 0, 1))*100;
+  return round1(clampNum(volumeScore*0.45 + freqScore*0.30 + consistencyScore*0.25, 0, 100));
+}
+function scoreUtilityReliabilityClient(rate){
+  rate = clampNum(rate||0, 0, 100);
+  if(rate>=70) return round1(rate);
+  return round1(clampNum(rate*(rate/70), 0, 100));
+}
+function scoreBusinessStabilityClient(years, employees, revenue){
+  const yearsScore = clampNum(Math.log1p(Math.max(0,years||0))/Math.log1p(10), 0, 1)*100;
+  const empScore = clampNum(Math.log1p(Math.max(0,employees||0))/Math.log1p(20), 0, 1)*100;
+  const revScore = clampNum(Math.log1p(Math.max(0,revenue||0))/Math.log1p(2000000), 0, 1)*100;
+  return round1(clampNum(yearsScore*0.45 + empScore*0.25 + revScore*0.30, 0, 100));
+}
+function scoreDebtBurdenClient(existingEmi, newEmi, revenue){
+  const rev = Math.max(1, revenue||0);
+  const dtiPercent = ((existingEmi||0)+(newEmi||0))/rev*100;
+  const score = clampNum(100 - clampNum(dtiPercent,0,100)*(100/60), 0, 100);
+  return { score: round1(score), dtiPercent: round1(dtiPercent) };
+}
+function getTierClient(score){
+  if(score>=750) return {label:'Excellent',color:'#22d3a8',note:'Priority eligibility for the widest range of lenders and lowest rates.'};
+  if(score>=650) return {label:'Good',color:'#38bdf8',note:'Solid eligibility for most alternative-data lenders.'};
+  if(score>=550) return {label:'Fair',color:'#f5b942',note:'Eligible for entry-tier alternative credit products; room to grow.'};
+  return {label:'Needs Improvement',color:'#f5636b',note:'Build more digital and utility payment history to unlock better offers.'};
+}
+
+function buildFactorInsightsClient(labels, scores, dtiPercent, city, industry){
+  const advice = {
+    digital: `Increase consistent digital transaction volume and weekly frequency in ${city} — aim for revenue-matched digital volume and 20+ payments/week to lift this 35%-weighted factor.`,
+    utility: 'Set up auto-pay or reminders for utility bills to push your on-time rate toward 95%+ — one of the fastest, lowest-effort factors to improve.',
+    stability: 'Business Stability grows with time in operation, steady staffing, and consistent revenue growth — there is no quick fix, but formalizing operations helps.',
+    debt: 'Keep combined EMIs below roughly 30-35% of monthly revenue when taking on new credit to protect this factor and stay well under the 45% warning threshold.',
+    demand: `Local demand for ${industry.toLowerCase()} is largely a market factor, but diversifying into adjacent, higher-demand offerings in ${city} can help.`,
+    macro: 'Reflects national inflation and GDP trends for context only — not directly controllable by an individual business.',
+  };
+  const insights = [];
+  const bestKey = Object.keys(scores).reduce((a,b)=> scores[a] >= scores[b] ? a : b);
+  insights.push(`✅ Your strongest factor is ${labels[bestKey]} at ${scores[bestKey]}/100 — lenders will view this favorably.`);
+  Object.keys(scores).forEach(k=>{
+    if(scores[k] < 70) insights.push(`⚠️ ${labels[k]} is ${scores[k]}/100 — ${advice[k]}`);
+  });
+  if(dtiPercent > 45){
+    insights.push(`Your debt-to-income ratio is ${dtiPercent}%, above the recommended 45% threshold — consider a smaller loan amount or longer tenure.`);
+  }
+  if(insights.length===1){
+    insights.push('All six factors are scoring well (70+/100) — keep up your current digital payment and bill payment habits to maintain this score.');
+  }
+  return insights.slice(0,8);
+}
+
+function computeOfflineFallbackScore(){
+  const loc = state.location, biz = state.business, debt = state.debt;
+  const info = state.locations[loc.country] || {};
+  const emi = computeEmiClient(debt.newLoanAmount, debt.annualInterestRate, debt.tenureMonths);
+
+  const digital = scoreDigitalPaymentHealthClient(biz.monthlyRevenue, biz.monthlyDigitalTxnVolume, biz.digitalPaymentFrequencyPerWeek, biz.weeksNoDigitalActivity6mo);
+  const utility = scoreUtilityReliabilityClient(biz.utilityOnTimeRate);
+  const stability = scoreBusinessStabilityClient(biz.yearsOperating, biz.employees, biz.monthlyRevenue);
+  const { score: debtScore, dtiPercent } = scoreDebtBurdenClient(debt.existingEmi, emi.emi, biz.monthlyRevenue);
+  const demandScore = stablePseudoScore([loc.country, loc.state, loc.city, biz.industry], 45, 82);
+  const macroScore = stablePseudoScore([info.iso3 || loc.country, 'macro-offline'], 55, 88);
+
+  const composite = round1(clampNum(
+    digital*0.35 + utility*0.15 + stability*0.15 + debtScore*0.15 + demandScore*0.12 + macroScore*0.08, 0, 100
+  ));
+  const finalScore = Math.round(300 + composite/100*600);
+  const tier = getTierClient(finalScore);
+
+  const labels = { digital:'Digital Payment Health', utility:'Utility Bill Reliability', stability:'Business Stability', debt:'Debt Burden', demand:'Local Market Demand', macro:'Macroeconomic Context' };
+  const scores = { digital, utility, stability, debt: debtScore, demand: demandScore, macro: macroScore };
+  const aiInsights = buildFactorInsightsClient(labels, scores, dtiPercent, loc.city, biz.industry);
+
+  return {
+    score: finalScore, scoreOutOf: 900, scoreMin: 300, compositeOutOf100: composite, tier,
+    factors: [
+      { key:'digitalPayment', label:labels.digital, weight:35, rawScore:digital, weightedContribution:round1(digital*0.35), detail:`Digital txn volume vs revenue, ${biz.digitalPaymentFrequencyPerWeek}x/week frequency, ${biz.weeksNoDigitalActivity6mo} inactive weeks in 6mo.` },
+      { key:'utilityReliability', label:labels.utility, weight:15, rawScore:utility, weightedContribution:round1(utility*0.15), detail:`${biz.utilityOnTimeRate}% of utility bills paid on time.` },
+      { key:'businessStability', label:labels.stability, weight:15, rawScore:stability, weightedContribution:round1(stability*0.15), detail:`${biz.yearsOperating} years operating, ${biz.employees} employees, ${fmtMoney(biz.monthlyRevenue)}/mo revenue.` },
+      { key:'debtBurden', label:labels.debt, weight:15, rawScore:debtScore, weightedContribution:round1(debtScore*0.15), detail:`Debt-to-income at ${dtiPercent}% including the new loan's EMI.` },
+      { key:'marketDemand', label:labels.demand, weight:12, rawScore:demandScore, weightedContribution:round1(demandScore*0.12), detail:`Offline estimate for ${biz.industry} in ${loc.city}, ${loc.state} (backend unreachable).` },
+      { key:'macroContext', label:labels.macro, weight:8, rawScore:macroScore, weightedContribution:round1(macroScore*0.08), detail:'Offline reference estimate (backend unreachable).' },
+    ],
+    emi: { newLoanEmi: emi.emi, totalInterest: emi.totalInterest, totalPayment: emi.totalPayment, existingEmi: debt.existingEmi, combinedMonthlyDebt: round1(debt.existingEmi+emi.emi), debtToIncomePercent: dtiPercent, warning: dtiPercent>45 },
+    marketDemand: { demandScore, reasoning:'Offline deterministic estimate — the CreditLens backend was unreachable, so this is not a live Gemini AI analysis.', source:'fallback', trend:'Stable' },
+    macro: { inflation: null, gdpGrowth: null, asOfYear:'n/a', score: macroScore, source:'fallback' },
+    aiInsights,
+    currency: { code: info.currency||'', symbol: info.currencySymbol||'' },
+    locationRails: info.dataRails||[],
+    generatedAt: new Date().toISOString(),
+    offline: true,
+  };
+}
+
 function renderDashboard(data){
+  document.getElementById('offline-banner').classList.toggle('hidden', !data.offline);
+
   const circumference = 2*Math.PI*86;
   const circle = document.getElementById('real-gauge-circle');
-  const fraction = (data.score - 300)/600;
+  const fraction = clampNum((data.score - 300)/600, 0, 1);
   circle.setAttribute('stroke-dasharray', circumference.toFixed(1));
   circle.style.transition = 'none';
   circle.setAttribute('stroke-dashoffset', circumference.toFixed(1));
@@ -1558,6 +1690,7 @@ function renderDashboard(data){
   badge.style.color = data.tier.color;
   badge.style.border = `1px solid ${data.tier.color}55`;
   badge.textContent = data.tier.label;
+  document.getElementById('composite-pct').textContent = `${data.compositeOutOf100}% composite score`;
   document.getElementById('tier-note').textContent = data.tier.note;
 
   document.getElementById('insight-cards').innerHTML = data.aiInsights.map(i=>
@@ -1576,12 +1709,15 @@ function renderDashboard(data){
     </div>
   `).join('');
 
+  const macroLine = data.macro.inflation !== null && data.macro.inflation !== undefined
+    ? `Inflation ${data.macro.inflation}% · GDP growth ${data.macro.gdpGrowth}%`
+    : `Offline estimate · Score ${data.macro.score}/100`;
   document.getElementById('macro-grid').innerHTML = `
     <div class="macro-tile"><span>Local Market Demand (AI)</span><b>${data.marketDemand.demandScore}/100 · ${data.marketDemand.trend}</b>
       <div class="factor-detail-desc">${data.marketDemand.reasoning}</div>
       <span class="source-tag ${data.marketDemand.source==='fallback'?'fallback':''}">${data.marketDemand.source==='gemini'?'✨ Gemini AI':'Deterministic estimate'}</span>
     </div>
-    <div class="macro-tile"><span>Macroeconomic Context</span><b>Inflation ${data.macro.inflation}% · GDP growth ${data.macro.gdpGrowth}%</b>
+    <div class="macro-tile"><span>Macroeconomic Context</span><b>${macroLine}</b>
       <div class="factor-detail-desc">As of ${data.macro.asOfYear}. Score ${data.macro.score}/100.</div>
       <span class="source-tag ${data.macro.source==='fallback'?'fallback':''}">${data.macro.source==='worldbank'?'🌍 World Bank live':'Fallback reference'}</span>
     </div>
